@@ -1,0 +1,3051 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ぷよ消しシュミレーター(試作) v72 ui-lite</title>
+<style>
+  :root {
+    --bg: #17142a;
+    --panel: rgba(255,255,255,.08);
+    --text: #f7f3ff;
+    --muted: #c9bfdf;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    background:
+      radial-gradient(circle at 28% 18%, #3b2e66 0, transparent 36%),
+      radial-gradient(circle at 72% 76%, #223e6d 0, transparent 34%),
+      var(--bg);
+    color: var(--text);
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    user-select: none;
+  }
+  @media (min-width: 1101px) {
+    html, body {
+      height: 100%;
+      overflow: hidden;
+    }
+  }
+
+  .wrap {
+    width: min(98vw, 1280px);
+    height: 100vh;
+    box-sizing: border-box;
+    margin: 0 auto;
+    padding: 14px;
+    display: grid;
+    grid-template-columns: 230px minmax(560px, 1fr) 320px;
+    gap: 14px;
+    align-items: start;
+    overflow: hidden;
+  }
+  .game {
+    padding: 16px;
+    border-radius: 22px;
+    background: var(--panel);
+    box-shadow: 0 18px 60px rgba(0,0,0,.35), inset 0 0 0 1px rgba(255,255,255,.09);
+    backdrop-filter: blur(10px);
+    min-width: 560px;
+    overflow: visible;
+  }
+  .clearCountBox {
+    margin-top: 12px;
+    padding: 12px;
+    border-radius: 16px;
+    background: rgba(0,0,0,.22);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.08);
+  }
+  .clearCountTitle {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+    color: var(--text);
+    font-weight: 800;
+  }
+  .clearCountTitle button {
+    width: auto;
+    margin-top: 0;
+    padding: 7px 10px;
+    border-radius: 10px;
+    font-size: 12px;
+  }
+  .clearCountGrid {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 6px;
+  }
+  .clearCountItem {
+    padding: 8px 6px;
+    border-radius: 12px;
+    background: rgba(255,255,255,.06);
+    text-align: center;
+    color: var(--muted);
+    font-size: 12px;
+  }
+  .clearCountItem strong {
+    display: block;
+    margin-top: 3px;
+    color: var(--text);
+    font-size: 18px;
+  }
+  canvas {
+    width: 100%;
+    max-width: 720px;
+    margin: 0 auto;
+    display: block;
+    border-radius: 18px;
+    background: rgba(10, 9, 22, .55);
+    touch-action: none;
+  }
+  .side,
+  .leftControls {
+    padding: 16px;
+    border-radius: 22px;
+    background: var(--panel);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.09);
+    max-height: calc(100vh - 28px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+  }
+
+  .side {
+    overflow-y: scroll;
+  }
+  .leftControls {
+    position: sticky;
+    top: 14px;
+  }
+  h1 {
+    margin: 0 0 12px;
+    font-size: 20px;
+    letter-spacing: .04em;
+  }
+  .stat {
+    margin: 10px 0;
+    padding: 10px 12px;
+    border-radius: 14px;
+    background: rgba(255,255,255,.07);
+    color: var(--muted);
+  }
+  .stat strong { color: var(--text); font-size: 22px; }
+  label {
+    display: block;
+    margin: 14px 0 6px;
+    color: var(--muted);
+    font-size: 14px;
+  }
+  input[type="range"] { width: 100%; }
+  select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid rgba(255,255,255,.18);
+    border-radius: 12px;
+    color: #ffffff;
+    font-weight: 700;
+    background: rgba(22,18,40,.95);
+    outline: none;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.04);
+  }
+  select option {
+    color: #ffffff;
+    background: #1d1832;
+  }
+  button {
+    width: 100%;
+    margin-top: 10px;
+    padding: 11px 12px;
+    border: 0;
+    border-radius: 14px;
+    color: #17142a;
+    background: #fff3a8;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  button.secondary {
+    background: rgba(255,255,255,.13);
+    color: var(--text);
+  }
+  button.activeMode {
+    background: #a8fff1;
+    color: #17142a;
+  }
+  button.speedActive {
+    background: #ffd86b;
+    color: #17142a;
+  }
+  .note {
+    margin-top: 14px;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.55;
+  }
+  .logBox {
+    margin-top: 14px;
+    padding: 12px;
+    min-height: 170px;
+    max-height: 300px;
+    overflow: auto;
+    border-radius: 14px;
+    background: rgba(0,0,0,.22);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.08);
+  }
+  .logTitle {
+    margin: 0 0 8px;
+    color: var(--text);
+    font-weight: 800;
+    font-size: 14px;
+  }
+  .chainLog {
+    margin: 0;
+    padding-left: 1.25em;
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.65;
+  }
+  .chainLog li strong {
+    color: var(--text);
+  }
+  .emptyLog {
+    margin: 0;
+    color: rgba(247,243,255,.56);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  .coefRow {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .replayControls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .replayControls button {
+    margin-top: 0;
+    min-height: 44px;
+  }
+
+  .replayControls #stepForwardBtn {
+    grid-column: 1 / -1;
+  }
+  input[type="number"] {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid rgba(255,255,255,.18);
+    border-radius: 12px;
+    color: #ffffff;
+    font-weight: 800;
+    background: rgba(22,18,40,.95);
+    outline: none;
+  }
+  .multBox {
+    margin-top: 14px;
+    padding: 12px;
+    border-radius: 14px;
+    background: rgba(0,0,0,.22);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.08);
+  }
+  .multTitle {
+    margin: 0 0 8px;
+    color: var(--text);
+    font-weight: 800;
+    font-size: 14px;
+  }
+  .multGrid {
+    display: grid;
+    gap: 6px;
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .multLine {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 5px 8px;
+    border-radius: 10px;
+    background: rgba(255,255,255,.055);
+  }
+  .multLine strong {
+    color: var(--text);
+  }
+  .tiny {
+    margin-top: 6px;
+    color: rgba(247,243,255,.58);
+    font-size: 12px;
+    line-height: 1.45;
+  }
+  @media (max-width: 1100px) {
+    html, body {
+      height: auto;
+      overflow: auto;
+    }
+    .wrap {
+      height: auto;
+      overflow: visible;
+      grid-template-columns: 1fr;
+    }
+    .leftControls,
+    .side,
+    .game {
+      position: static;
+      order: initial;
+      max-height: none;
+      overflow: visible;
+    }
+    .leftControls { order: -2; }
+    .side { order: -1; }
+  }
+  .boostedMult { color: #ffe86b; font-weight: 900; margin-left: 6px; }
+</style>
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#17142a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ぷよ消しシュミレーター">
+<link rel="apple-touch-icon" href="icon-512.png">
+
+</head>
+<body>
+<div class="wrap">
+  <aside class="leftControls">
+    <h1>操作</h1>
+    <div id="leftActionMount"></div>
+  </aside>
+
+  <div class="game">
+    <canvas id="canvas" width="640" height="640"></canvas>
+    
+    <details class="clearCountBox" id="boostCountBox">
+      <summary class="clearCountTitle">
+        <span>ブーストエリアで消えたぷよ</span>
+      </summary>
+
+      <div id="boostCountGrid" class="clearCountGrid" style="margin-top:10px;"></div>
+
+      <div class="tiny">
+        ブーストエリア内で消えたぷよ,ハート,おじゃま,プリボ1個につき最終倍率+4%。最大200%。プラスぷよは2個分。
+      </div>
+
+      <div class="tiny" id="boostMultiplierText"></div>
+    </details>
+
+<div class="clearCountBox">
+      <div class="clearCountTitle">
+        <span>累計消去数</span>
+        <button id="resetClearCounts" class="secondary">カウントリセット</button>
+      </div>
+      <div id="clearCountGrid" class="clearCountGrid"></div>
+    </div>
+  </div>
+  <aside class="side">
+    <h1>ぷよ消しシュミレーター(試作) v72 ui-lite</h1>
+    <div class="stat">連鎖 <strong id="chain">0</strong></div>
+    <div class="stat">合計倍率 <strong id="totalMultiplier">0.00</strong>倍</div>
+    <div class="stat">選択 <strong id="selected">0</strong>/<strong id="limitView">5</strong></div>
+
+    <label>なぞり消し可能数：<span id="limitLabel">5</span></label>
+    <input id="limit" type="range" min="1" max="24" value="5" />
+
+    <label>同時消し係数</label>
+    <div class="coefRow">
+      <input id="simulCoef" type="number" min="0" max="1" step="0.01" value="0.15" />
+      <button id="applyCoef" class="secondary" style="margin-top:0;">反映</button>
+    </div>
+    <div class="tiny">初期値0.15。ハートボックスは同時消し数に含めない。</div>
+
+    <label>連鎖倍率 全体n倍</label>
+    <div class="coefRow">
+      <input id="chainScale" type="number" min="0" step="0.1" value="1.0" />
+      <button id="applyChainCoef" class="secondary" style="margin-top:0;">反映</button>
+    </div>
+    <div class="tiny">既存の連鎖倍率に、このn倍を掛ける。</div>
+
+    <label>演出速度</label>
+    <div class="coefRow">
+      <button id="speed2" class="secondary" style="margin-top:0;">2倍速</button>
+      <button id="speed3" class="secondary" style="margin-top:0;">3倍速</button>
+    </div>
+    <div class="tiny">ボタンを押している間だけ、ぷよ消去・落下演出が倍速になる。</div>
+
+    <div class="replayControls" style="margin-top:10px;">
+      <button id="pauseReplayBtn" class="secondary" style="margin-top:0;">一時停止</button>
+      <button id="stepBackBtn" class="secondary" style="margin-top:0;">1連鎖戻る</button>
+      <button id="stepForwardBtn" class="secondary" style="margin-top:0;">1連鎖進む</button>
+    </div>
+    <div class="tiny">連鎖演出中の確認用。巻き戻し/送りは記録済みの盤面を表示する。DOM差分更新で軽量化。</div>
+
+    <label>盤面一時保存</label>
+    <select id="saveSlotSelect">
+      <option value="1">保存枠1</option>
+      <option value="2">保存枠2</option>
+      <option value="3">保存枠3</option>
+      <option value="4">保存枠4</option>
+      <option value="5">保存枠5</option>
+      <option value="6">保存枠6</option>
+      <option value="7">保存枠7</option>
+      <option value="8">保存枠8</option>
+      <option value="9">保存枠9</option>
+      <option value="10">保存枠10</option>
+      <option value="11">保存枠11</option>
+      <option value="12">保存枠12</option>
+    </select>
+
+    <div class="coefRow" style="margin-top:10px;">
+      <button id="saveSlotBtn" class="secondary" style="margin-top:0;">保存</button>
+      <button id="loadSlotBtn" class="secondary" style="margin-top:0;">復元</button>
+      <button id="deleteSlotBtn" class="secondary" style="margin-top:0;">削除</button>
+    </div>
+
+    <div class="tiny">盤面・NEXT・ブーストエリア・通常/特別ルール状態を保存。</div>
+
+    <div class="multBox">
+      <div class="multTitle">色別倍率</div>
+      <div id="multGrid" class="multGrid"></div>
+    </div>
+
+    <button id="resolve">選択ぷよを消す</button>
+    <button id="clearSelect" class="secondary">選択だけ解除</button>
+    <button id="reset" class="secondary">盤面リセット</button>
+
+    <label>特別ルール</label>
+    <div class="coefRow">
+      <select id="specialBoard">
+        <option value="1">盤面1</option>
+        <option value="2">盤面2</option>
+      </select>
+      <button id="applySpecial" class="secondary" style="margin-top:0;">実行</button>
+    </div>
+    <div class="tiny">特別ルール中は3連結以上で消去。同時消し倍率は「ぷよ数−3」で計算。ネクネク以降のみで3連結以上は禁止。</div>
+    <label>おじゃま連鎖の種</label>
+    <div class="coefRow">
+      <select id="ojamaSeedBoard">
+        <option value="1">盤面1</option>
+        <option value="2">盤面2</option>
+        <option value="3">盤面3</option>
+        <option value="4">盤面4</option>
+        <option value="5">盤面5</option>
+        <option value="6">盤面6</option>
+        <option value="7">盤面7</option>
+        <option value="8">盤面8</option>
+      </select>
+      <button id="applyOjamaSeed" class="secondary" style="margin-top:0;">実行</button>
+    </div>
+    <div class="tiny">通常4連結ルール。白ぷよはおじゃまぷよ。</div>
+
+    <label>色ぷよ塗り替え（通常4連結ルール専用）</label>
+    <select id="paintColor">
+      <option value="1">赤</option>
+      <option value="2">青</option>
+      <option value="3">緑</option>
+      <option value="4">黄</option>
+      <option value="5">紫</option>
+      <option value="plus">プラスぷよ化</option>
+    </select>
+    <div class="tiny">「プラスぷよ化」は色を変えず、選択した色ぷよをそのままプラスぷよにする。おじゃま/ハートは単独連結では消えない。</div>
+    <label style="display:flex; gap:8px; align-items:center; margin-top:8px;">
+      <input id="allowHeartPaint" type="checkbox" />
+      ハートボックス、おじゃまぷよも塗り替え対象にする
+    </label>
+    <button id="paintModeBtn" class="secondary">塗り替え選択モード</button>
+    <button id="applyPaintBtn" class="secondary">選択ぷよを塗り替えて実行</button>
+
+    <button id="boostModeBtn" class="secondary">ブーストエリア選択</button>
+
+    <label>サタエコ系統</label>
+    <div class="coefRow">
+      <select id="sataekoType">
+        <option value="sataeko">サタエコ</option>
+        <option value="shizu">シズ</option>
+      </select>
+      <button id="applySataekoSeed" class="secondary" style="margin-top:0;">実行</button>
+    </div>
+
+    <label>連鎖の種</label>
+    <select id="sataekoSeedBoard">
+      <option value="1">盤面1</option>
+      <option value="2">盤面2</option>
+      <option value="3">盤面3</option>
+      <option value="4">盤面4</option>
+      <option value="5">盤面5</option>
+      <option value="6">盤面6</option>
+      <option value="7">盤面7</option>
+      <option value="8">盤面8</option>
+      <option value="9">盤面9</option>
+      <option value="10">盤面10</option>
+      <option value="11">盤面11</option>
+      <option value="12">盤面12</option>
+    </select>
+
+    <label style="display:flex;gap:8px;align-items:flex-start;line-height:1.35;">
+      <input id="enableSataekoChase" type="checkbox" style="width:auto;margin-top:3px;" />
+      <span>全消しを達成した場合、直後に落ちてくる色ぷよを連鎖が発生する各色ぷよに変える</span>
+    </label>
+
+    <label>全消し達成後の追加盤面</label>
+    <select id="sataekoChaseBoard">
+      <option value="1">盤面1</option>
+      <option value="2">盤面2</option>
+    </select>
+
+    <label>モード選択</label>
+    <label style="display:flex;gap:8px;align-items:flex-start;line-height:1.35;">
+      <input id="nextOnlyMode" type="checkbox" style="width:auto;margin-top:3px;" />
+      <span>NEXTだけ降ってくるモード</span>
+    </label>
+    <div class="tiny">ON中は、空き補充時に見えているNEXTだけを使う。NEXTを使い切ったら空きマスのままターン終了。</div>
+
+    <label>NEXTぷよ変換</label>
+    <select id="nextColor">
+      <option value="1">赤</option>
+      <option value="2">青</option>
+      <option value="3">緑</option>
+      <option value="4">黄</option>
+      <option value="5">紫</option>
+    </select>
+    <button id="convertNext" class="secondary">表示中NEXTをこの色に変換</button>
+    <button id="convertNextPlus" class="secondary">表示中NEXTをプラスぷよ化</button>
+    <label style="display:flex;gap:8px;align-items:flex-start;line-height:1.35;">
+      <input id="keepNextConvert" type="checkbox" style="width:auto;margin-top:3px;" />
+      <span>NEXTぷよ変換・NEXTプラスぷよ状態を盤面変更後も引き継ぐ</span>
+    </label>
+
+    <div class="logBox">
+      <div class="logTitle">連鎖ログ</div>
+      <ol id="chainLog" class="chainLog"></ol>
+      <p id="emptyLog" class="emptyLog">まだ連鎖ログはありません。</p>
+    </div>
+
+    <div class="note">
+      8列×6行。上の薄い1段がネクスト表示。<br>
+      縦横斜めに選択可能。同じマスは重複不可。<br>クリックを離しても選択は保持。選択済みマス全体を地続き判定。最後に触った場所に関係なく、隣接する選択済みマスから追加できる。<br>
+      表示NEXTにはハートボックスを出さない。NEXTだけ降ってくるモードでは、見えているNEXTを使い切ったら空きマスのまま停止する。チェックON時はNEXT色変換・NEXTプラス状態を盤面変更後も引き継ぐ。ネクネク以降の落下ぷよはハート5%、各色19%。通常は4連結、特別ルール中は3連結で消去。<br>
+      盤面内の連鎖を最後まで解決してからNEXT補充。倍率は色ぷよのみで計算し、ハートは同時消し数に含めない。
+    </div>
+  </aside>
+</div>
+
+<script>
+(() => {
+  const COLS = 8;
+  const ROWS = 6;
+
+  const TYPES = {
+    EMPTY: 0, RED: 1, BLUE: 2, GREEN: 3, YELLOW: 4, PURPLE: 5, HEART: 6, OJAMA: 7
+  };
+
+  const COLORS = {
+    1: "#ef4b66",
+    2: "#3d8bff",
+    3: "#35c46a",
+    4: "#f6c94a",
+    5: "#a766ff",
+    6: "#ff83be",
+    7: "#dfe6ee"
+  };
+
+  const COLOR_TYPES = [TYPES.RED, TYPES.BLUE, TYPES.GREEN, TYPES.YELLOW, TYPES.PURPLE];
+  const TYPE_NAMES = {
+    [TYPES.RED]: "赤",
+    [TYPES.BLUE]: "青",
+    [TYPES.GREEN]: "緑",
+    [TYPES.YELLOW]: "黄",
+    [TYPES.PURPLE]: "紫",
+    [TYPES.HEART]: "ハート",
+    [TYPES.OJAMA]: "おじゃま"
+  };
+  const LOG_ORDER = [TYPES.RED, TYPES.BLUE, TYPES.GREEN, TYPES.YELLOW, TYPES.PURPLE, TYPES.HEART];
+  const ATTACK_COLORS = [TYPES.RED, TYPES.BLUE, TYPES.GREEN, TYPES.YELLOW, TYPES.PURPLE];
+
+
+  // サタエコ系統：全消し後にNEXTの代わりに降らせる追撃固定配置。
+  // ここでは盤面データのみ実装。発動処理は後続で接続する。
+  const SATAEKO_CHASE_BOARDS = {
+    1: [
+      [TYPES.BLUE,  TYPES.GREEN, TYPES.PURPLE,TYPES.GREEN, TYPES.PURPLE,TYPES.GREEN, TYPES.PURPLE,TYPES.BLUE],
+      [TYPES.RED,   TYPES.RED,   TYPES.RED,   TYPES.RED,   TYPES.YELLOW,TYPES.YELLOW,TYPES.YELLOW,TYPES.YELLOW],
+      [TYPES.BLUE,  TYPES.GREEN, TYPES.PURPLE,TYPES.GREEN, TYPES.PURPLE,TYPES.GREEN, TYPES.PURPLE,TYPES.BLUE],
+      [TYPES.BLUE,  TYPES.GREEN, TYPES.PURPLE,TYPES.GREEN, TYPES.PURPLE,TYPES.GREEN, TYPES.PURPLE,TYPES.BLUE],
+      [TYPES.YELLOW,TYPES.YELLOW,TYPES.YELLOW,TYPES.YELLOW,TYPES.RED,   TYPES.RED,   TYPES.RED,   TYPES.RED],
+      [TYPES.BLUE,  TYPES.GREEN, TYPES.PURPLE,TYPES.GREEN, TYPES.PURPLE,TYPES.GREEN, TYPES.PURPLE,TYPES.BLUE]
+    ],
+    2: [
+      [TYPES.RED,   TYPES.RED,   TYPES.RED,   TYPES.RED,   TYPES.BLUE,  TYPES.BLUE,  TYPES.BLUE,  TYPES.BLUE],
+      [TYPES.GREEN, TYPES.YELLOW,TYPES.GREEN, TYPES.PURPLE,TYPES.GREEN, TYPES.PURPLE,TYPES.YELLOW,TYPES.PURPLE],
+      [TYPES.GREEN, TYPES.YELLOW,TYPES.GREEN, TYPES.PURPLE,TYPES.GREEN, TYPES.PURPLE,TYPES.YELLOW,TYPES.PURPLE],
+      [TYPES.RED,   TYPES.RED,   TYPES.RED,   TYPES.RED,   TYPES.BLUE,  TYPES.BLUE,  TYPES.BLUE,  TYPES.BLUE],
+      [TYPES.GREEN, TYPES.YELLOW,TYPES.GREEN, TYPES.PURPLE,TYPES.GREEN, TYPES.PURPLE,TYPES.YELLOW,TYPES.PURPLE],
+      [TYPES.GREEN, TYPES.YELLOW,TYPES.GREEN, TYPES.PURPLE,TYPES.GREEN, TYPES.PURPLE,TYPES.YELLOW,TYPES.PURPLE]
+    ]
+  };
+
+  const SATAEKO_TO_SHIZU_COLOR_MAP = {
+    [TYPES.BLUE]: TYPES.YELLOW,
+    [TYPES.GREEN]: TYPES.RED,
+    [TYPES.PURPLE]: TYPES.BLUE,
+    [TYPES.RED]: TYPES.GREEN,
+    [TYPES.YELLOW]: TYPES.PURPLE
+  };
+
+  function mapSataekoBoardToShizu(board) {
+    return board.map(row => row.map(type => SATAEKO_TO_SHIZU_COLOR_MAP[type] || type));
+  }
+
+  const SHIZU_CHASE_BOARDS = {
+    1: mapSataekoBoardToShizu(SATAEKO_CHASE_BOARDS[1]),
+    2: mapSataekoBoardToShizu(SATAEKO_CHASE_BOARDS[2])
+  };
+
+
+  const SATAEKO_CHAIN_SEEDS = {
+    1: [
+      [TYPES.PURPLE,TYPES.GREEN,TYPES.YELLOW,TYPES.BLUE,TYPES.BLUE,TYPES.RED,TYPES.RED,TYPES.RED],
+      [TYPES.YELLOW,TYPES.RED,TYPES.RED,TYPES.BLUE,TYPES.PURPLE,TYPES.GREEN,TYPES.BLUE,TYPES.YELLOW],
+      [TYPES.YELLOW,TYPES.YELLOW,TYPES.PURPLE,TYPES.YELLOW,TYPES.HEART,TYPES.HEART,TYPES.HEART,TYPES.HEART],
+      [TYPES.RED,TYPES.RED,TYPES.GREEN,TYPES.YELLOW,TYPES.PURPLE,TYPES.YELLOW,TYPES.YELLOW,TYPES.YELLOW],
+      [TYPES.PURPLE,TYPES.PURPLE,TYPES.BLUE,TYPES.YELLOW,TYPES.PURPLE,TYPES.BLUE,TYPES.BLUE,TYPES.BLUE],
+      [TYPES.GREEN,TYPES.GREEN,TYPES.YELLOW,TYPES.PURPLE,TYPES.RED,TYPES.GREEN,TYPES.GREEN,TYPES.GREEN]
+    ],
+    2: [
+      [TYPES.HEART,TYPES.GREEN,TYPES.GREEN,TYPES.GREEN,TYPES.PURPLE,TYPES.PURPLE,TYPES.RED,TYPES.GREEN],
+      [TYPES.GREEN,TYPES.YELLOW,TYPES.YELLOW,TYPES.HEART,TYPES.HEART,TYPES.HEART,TYPES.PURPLE,TYPES.PURPLE],
+      [TYPES.YELLOW,TYPES.RED,TYPES.PURPLE,TYPES.BLUE,TYPES.GREEN,TYPES.RED,TYPES.RED,TYPES.RED],
+      [TYPES.YELLOW,TYPES.RED,TYPES.PURPLE,TYPES.BLUE,TYPES.GREEN,TYPES.YELLOW,TYPES.BLUE,TYPES.GREEN],
+      [TYPES.RED,TYPES.PURPLE,TYPES.BLUE,TYPES.GREEN,TYPES.YELLOW,TYPES.BLUE,TYPES.GREEN,TYPES.GREEN],
+      [TYPES.RED,TYPES.PURPLE,TYPES.BLUE,TYPES.GREEN,TYPES.YELLOW,TYPES.YELLOW,TYPES.BLUE,TYPES.BLUE]
+    ],
+    3: [
+      [TYPES.YELLOW,TYPES.RED,TYPES.GREEN,TYPES.GREEN,TYPES.BLUE,TYPES.PURPLE,TYPES.YELLOW,TYPES.GREEN],
+      [TYPES.RED,TYPES.GREEN,TYPES.BLUE,TYPES.RED,TYPES.RED,TYPES.BLUE,TYPES.BLUE,TYPES.BLUE],
+      [TYPES.YELLOW,TYPES.HEART,TYPES.YELLOW,TYPES.HEART,TYPES.RED,TYPES.PURPLE,TYPES.PURPLE,TYPES.GREEN],
+      [TYPES.HEART,TYPES.YELLOW,TYPES.HEART,TYPES.YELLOW,TYPES.PURPLE,TYPES.YELLOW,TYPES.GREEN,TYPES.GREEN],
+      [TYPES.RED,TYPES.GREEN,TYPES.BLUE,TYPES.BLUE,TYPES.BLUE,TYPES.YELLOW,TYPES.PURPLE,TYPES.PURPLE],
+      [TYPES.RED,TYPES.YELLOW,TYPES.YELLOW,TYPES.YELLOW,TYPES.RED,TYPES.PURPLE,TYPES.YELLOW,TYPES.PURPLE]
+    ],
+    4: [
+      [TYPES.RED,TYPES.HEART,TYPES.GREEN,TYPES.PURPLE,TYPES.PURPLE,TYPES.BLUE,TYPES.RED,TYPES.HEART],
+      [TYPES.RED,TYPES.RED,TYPES.HEART,TYPES.GREEN,TYPES.GREEN,TYPES.PURPLE,TYPES.YELLOW,TYPES.GREEN],
+      [TYPES.GREEN,TYPES.GREEN,TYPES.RED,TYPES.GREEN,TYPES.PURPLE,TYPES.BLUE,TYPES.BLUE,TYPES.BLUE],
+      [TYPES.GREEN,TYPES.PURPLE,TYPES.GREEN,TYPES.YELLOW,TYPES.BLUE,TYPES.YELLOW,TYPES.YELLOW,TYPES.YELLOW],
+      [TYPES.YELLOW,TYPES.YELLOW,TYPES.YELLOW,TYPES.BLUE,TYPES.RED,TYPES.RED,TYPES.GREEN,TYPES.GREEN],
+      [TYPES.PURPLE,TYPES.PURPLE,TYPES.PURPLE,TYPES.YELLOW,TYPES.BLUE,TYPES.BLUE,TYPES.RED,TYPES.GREEN]
+    ],
+    5: [
+      [TYPES.RED,TYPES.YELLOW,TYPES.BLUE,TYPES.PURPLE,TYPES.PURPLE,TYPES.PURPLE,TYPES.HEART,TYPES.PURPLE],
+      [TYPES.YELLOW,TYPES.PURPLE,TYPES.GREEN,TYPES.BLUE,TYPES.BLUE,TYPES.BLUE,TYPES.PURPLE,TYPES.HEART],
+      [TYPES.YELLOW,TYPES.PURPLE,TYPES.GREEN,TYPES.YELLOW,TYPES.RED,TYPES.GREEN,TYPES.BLUE,TYPES.HEART],
+      [TYPES.PURPLE,TYPES.GREEN,TYPES.YELLOW,TYPES.RED,TYPES.GREEN,TYPES.BLUE,TYPES.PURPLE,TYPES.HEART],
+      [TYPES.YELLOW,TYPES.PURPLE,TYPES.GREEN,TYPES.YELLOW,TYPES.RED,TYPES.GREEN,TYPES.BLUE,TYPES.PURPLE],
+      [TYPES.RED,TYPES.RED,TYPES.RED,TYPES.YELLOW,TYPES.RED,TYPES.GREEN,TYPES.BLUE,TYPES.PURPLE]
+    ],
+    6: [
+      [TYPES.RED,TYPES.BLUE,TYPES.HEART,TYPES.PURPLE,TYPES.YELLOW,TYPES.YELLOW,TYPES.PURPLE,TYPES.YELLOW],
+      [TYPES.YELLOW,TYPES.PURPLE,TYPES.PURPLE,TYPES.YELLOW,TYPES.HEART,TYPES.HEART,TYPES.HEART,TYPES.GREEN],
+      [TYPES.BLUE,TYPES.BLUE,TYPES.GREEN,TYPES.PURPLE,TYPES.YELLOW,TYPES.PURPLE,TYPES.BLUE,TYPES.GREEN],
+      [TYPES.BLUE,TYPES.YELLOW,TYPES.YELLOW,TYPES.RED,TYPES.PURPLE,TYPES.GREEN,TYPES.GREEN,TYPES.BLUE],
+      [TYPES.GREEN,TYPES.GREEN,TYPES.YELLOW,TYPES.PURPLE,TYPES.RED,TYPES.RED,TYPES.RED,TYPES.BLUE],
+      [TYPES.GREEN,TYPES.RED,TYPES.RED,TYPES.RED,TYPES.YELLOW,TYPES.YELLOW,TYPES.YELLOW,TYPES.BLUE]
+    ],
+    7: [
+      [TYPES.BLUE,TYPES.PURPLE,TYPES.RED,TYPES.HEART,TYPES.BLUE,TYPES.HEART,TYPES.YELLOW,TYPES.YELLOW],
+      [TYPES.PURPLE,TYPES.RED,TYPES.BLUE,TYPES.BLUE,TYPES.HEART,TYPES.YELLOW,TYPES.BLUE,TYPES.GREEN],
+      [TYPES.PURPLE,TYPES.PURPLE,TYPES.RED,TYPES.RED,TYPES.BLUE,TYPES.GREEN,TYPES.GREEN,TYPES.YELLOW],
+      [TYPES.BLUE,TYPES.GREEN,TYPES.YELLOW,TYPES.PURPLE,TYPES.HEART,TYPES.RED,TYPES.GREEN,TYPES.BLUE],
+      [TYPES.BLUE,TYPES.BLUE,TYPES.GREEN,TYPES.YELLOW,TYPES.PURPLE,TYPES.PURPLE,TYPES.RED,TYPES.BLUE],
+      [TYPES.GREEN,TYPES.GREEN,TYPES.YELLOW,TYPES.YELLOW,TYPES.PURPLE,TYPES.RED,TYPES.RED,TYPES.BLUE]
+    ],
+    8: [
+      [TYPES.GREEN,TYPES.GREEN,TYPES.RED,TYPES.GREEN,TYPES.BLUE,TYPES.BLUE,TYPES.RED,TYPES.YELLOW],
+      [TYPES.PURPLE,TYPES.YELLOW,TYPES.GREEN,TYPES.BLUE,TYPES.GREEN,TYPES.PURPLE,TYPES.BLUE,TYPES.RED],
+      [TYPES.PURPLE,TYPES.PURPLE,TYPES.RED,TYPES.HEART,TYPES.HEART,TYPES.YELLOW,TYPES.YELLOW,TYPES.RED],
+      [TYPES.RED,TYPES.RED,TYPES.BLUE,TYPES.HEART,TYPES.HEART,TYPES.PURPLE,TYPES.YELLOW,TYPES.RED],
+      [TYPES.PURPLE,TYPES.RED,TYPES.YELLOW,TYPES.BLUE,TYPES.BLUE,TYPES.GREEN,TYPES.PURPLE,TYPES.BLUE],
+      [TYPES.GREEN,TYPES.YELLOW,TYPES.YELLOW,TYPES.RED,TYPES.RED,TYPES.RED,TYPES.GREEN,TYPES.PURPLE]
+    ],
+    9: [
+      [TYPES.YELLOW,TYPES.BLUE,TYPES.RED,TYPES.HEART,TYPES.PURPLE,TYPES.HEART,TYPES.BLUE,TYPES.BLUE],
+      [TYPES.BLUE,TYPES.RED,TYPES.PURPLE,TYPES.PURPLE,TYPES.HEART,TYPES.RED,TYPES.RED,TYPES.BLUE],
+      [TYPES.BLUE,TYPES.BLUE,TYPES.RED,TYPES.RED,TYPES.PURPLE,TYPES.GREEN,TYPES.PURPLE,TYPES.PURPLE],
+      [TYPES.YELLOW,TYPES.PURPLE,TYPES.GREEN,TYPES.YELLOW,TYPES.HEART,TYPES.RED,TYPES.BLUE,TYPES.PURPLE],
+      [TYPES.YELLOW,TYPES.YELLOW,TYPES.PURPLE,TYPES.GREEN,TYPES.RED,TYPES.YELLOW,TYPES.GREEN,TYPES.GREEN],
+      [TYPES.GREEN,TYPES.GREEN,TYPES.PURPLE,TYPES.PURPLE,TYPES.YELLOW,TYPES.YELLOW,TYPES.GREEN,TYPES.PURPLE]
+    ],
+    10: [
+      [TYPES.HEART,TYPES.GREEN,TYPES.GREEN,TYPES.PURPLE,TYPES.RED,TYPES.RED,TYPES.HEART,TYPES.HEART],
+      [TYPES.RED,TYPES.PURPLE,TYPES.PURPLE,TYPES.HEART,TYPES.BLUE,TYPES.GREEN,TYPES.RED,TYPES.RED],
+      [TYPES.GREEN,TYPES.GREEN,TYPES.PURPLE,TYPES.BLUE,TYPES.RED,TYPES.BLUE,TYPES.PURPLE,TYPES.YELLOW],
+      [TYPES.RED,TYPES.BLUE,TYPES.YELLOW,TYPES.RED,TYPES.RED,TYPES.BLUE,TYPES.YELLOW,TYPES.YELLOW],
+      [TYPES.RED,TYPES.RED,TYPES.YELLOW,TYPES.PURPLE,TYPES.PURPLE,TYPES.RED,TYPES.GREEN,TYPES.GREEN],
+      [TYPES.BLUE,TYPES.BLUE,TYPES.BLUE,TYPES.YELLOW,TYPES.YELLOW,TYPES.PURPLE,TYPES.GREEN,TYPES.YELLOW]
+    ],
+    11: [
+      [TYPES.RED,TYPES.PURPLE,TYPES.RED,TYPES.RED,TYPES.HEART,TYPES.BLUE,TYPES.HEART,TYPES.HEART],
+      [TYPES.PURPLE,TYPES.HEART,TYPES.PURPLE,TYPES.PURPLE,TYPES.RED,TYPES.RED,TYPES.BLUE,TYPES.YELLOW],
+      [TYPES.RED,TYPES.BLUE,TYPES.GREEN,TYPES.BLUE,TYPES.YELLOW,TYPES.GREEN,TYPES.BLUE,TYPES.BLUE],
+      [TYPES.RED,TYPES.BLUE,TYPES.GREEN,TYPES.BLUE,TYPES.YELLOW,TYPES.GREEN,TYPES.PURPLE,TYPES.YELLOW],
+      [TYPES.BLUE,TYPES.GREEN,TYPES.BLUE,TYPES.YELLOW,TYPES.GREEN,TYPES.PURPLE,TYPES.YELLOW,TYPES.YELLOW],
+      [TYPES.RED,TYPES.BLUE,TYPES.GREEN,TYPES.BLUE,TYPES.YELLOW,TYPES.GREEN,TYPES.PURPLE,TYPES.PURPLE]
+    ],
+    12: [
+      [TYPES.RED,TYPES.HEART,TYPES.HEART,TYPES.YELLOW,TYPES.PURPLE,TYPES.PURPLE,TYPES.YELLOW,TYPES.PURPLE],
+      [TYPES.YELLOW,TYPES.YELLOW,TYPES.YELLOW,TYPES.PURPLE,TYPES.HEART,TYPES.HEART,TYPES.YELLOW,TYPES.PURPLE],
+      [TYPES.RED,TYPES.BLUE,TYPES.GREEN,TYPES.BLUE,TYPES.PURPLE,TYPES.GREEN,TYPES.RED,TYPES.RED],
+      [TYPES.RED,TYPES.RED,TYPES.BLUE,TYPES.YELLOW,TYPES.GREEN,TYPES.YELLOW,TYPES.PURPLE,TYPES.RED],
+      [TYPES.BLUE,TYPES.BLUE,TYPES.GREEN,TYPES.GREEN,TYPES.YELLOW,TYPES.BLUE,TYPES.GREEN,TYPES.GREEN],
+      [TYPES.YELLOW,TYPES.YELLOW,TYPES.YELLOW,TYPES.GREEN,TYPES.BLUE,TYPES.BLUE,TYPES.PURPLE,TYPES.RED]
+    ]
+  };
+
+  const OJAMA_SEEDS = {
+    1: [
+      [TYPES.OJAMA,TYPES.BLUE,TYPES.BLUE,TYPES.BLUE,TYPES.YELLOW,TYPES.OJAMA,TYPES.OJAMA,TYPES.OJAMA],
+      [TYPES.BLUE,TYPES.PURPLE,TYPES.PURPLE,TYPES.YELLOW,TYPES.GREEN,TYPES.OJAMA,TYPES.OJAMA,TYPES.OJAMA],
+      [TYPES.OJAMA,TYPES.GREEN,TYPES.GREEN,TYPES.PURPLE,TYPES.RED,TYPES.OJAMA,TYPES.OJAMA,TYPES.RED],
+      [TYPES.OJAMA,TYPES.RED,TYPES.YELLOW,TYPES.OJAMA,TYPES.OJAMA,TYPES.GREEN,TYPES.GREEN,TYPES.GREEN],
+      [TYPES.GREEN,TYPES.BLUE,TYPES.GREEN,TYPES.PURPLE,TYPES.OJAMA,TYPES.RED,TYPES.RED,TYPES.OJAMA],
+      [TYPES.GREEN,TYPES.OJAMA,TYPES.OJAMA,TYPES.PURPLE,TYPES.OJAMA,TYPES.YELLOW,TYPES.YELLOW,TYPES.OJAMA]
+    ],
+    2: [
+      [TYPES.RED,TYPES.RED,TYPES.RED,TYPES.YELLOW,TYPES.OJAMA,TYPES.OJAMA,TYPES.PURPLE,TYPES.BLUE],
+      [TYPES.OJAMA,TYPES.PURPLE,TYPES.OJAMA,TYPES.OJAMA,TYPES.BLUE,TYPES.OJAMA,TYPES.PURPLE,TYPES.BLUE],
+      [TYPES.RED,TYPES.PURPLE,TYPES.PURPLE,TYPES.BLUE,TYPES.OJAMA,TYPES.PURPLE,TYPES.YELLOW,TYPES.PURPLE],
+      [TYPES.RED,TYPES.BLUE,TYPES.BLUE,TYPES.OJAMA,TYPES.YELLOW,TYPES.YELLOW,TYPES.GREEN,TYPES.PURPLE],
+      [TYPES.OJAMA,TYPES.OJAMA,TYPES.OJAMA,TYPES.PURPLE,TYPES.OJAMA,TYPES.GREEN,TYPES.BLUE,TYPES.OJAMA],
+      [TYPES.RED,TYPES.RED,TYPES.RED,TYPES.OJAMA,TYPES.GREEN,TYPES.GREEN,TYPES.YELLOW,TYPES.BLUE]
+    ],
+    3: [
+      [TYPES.OJAMA,TYPES.OJAMA,TYPES.RED,TYPES.RED,TYPES.OJAMA,TYPES.OJAMA,TYPES.OJAMA,TYPES.YELLOW],
+      [TYPES.RED,TYPES.RED,TYPES.OJAMA,TYPES.GREEN,TYPES.OJAMA,TYPES.OJAMA,TYPES.BLUE,TYPES.BLUE],
+      [TYPES.OJAMA,TYPES.OJAMA,TYPES.GREEN,TYPES.OJAMA,TYPES.RED,TYPES.RED,TYPES.RED,TYPES.BLUE],
+      [TYPES.GREEN,TYPES.GREEN,TYPES.OJAMA,TYPES.PURPLE,TYPES.OJAMA,TYPES.OJAMA,TYPES.OJAMA,TYPES.RED],
+      [TYPES.PURPLE,TYPES.PURPLE,TYPES.PURPLE,TYPES.OJAMA,TYPES.YELLOW,TYPES.YELLOW,TYPES.YELLOW,TYPES.BLUE],
+      [TYPES.OJAMA,TYPES.OJAMA,TYPES.OJAMA,TYPES.OJAMA,TYPES.GREEN,TYPES.GREEN,TYPES.GREEN,TYPES.OJAMA]
+    ],
+    4: [
+      [TYPES.OJAMA,TYPES.GREEN,TYPES.OJAMA,TYPES.PURPLE,TYPES.OJAMA,TYPES.YELLOW,TYPES.OJAMA,TYPES.PURPLE],
+      [TYPES.OJAMA,TYPES.YELLOW,TYPES.PURPLE,TYPES.BLUE,TYPES.PURPLE,TYPES.BLUE,TYPES.GREEN,TYPES.BLUE],
+      [TYPES.RED,TYPES.OJAMA,TYPES.BLUE,TYPES.PURPLE,TYPES.PURPLE,TYPES.OJAMA,TYPES.BLUE,TYPES.BLUE],
+      [TYPES.BLUE,TYPES.BLUE,TYPES.RED,TYPES.GREEN,TYPES.OJAMA,TYPES.GREEN,TYPES.GREEN,TYPES.GREEN],
+      [TYPES.BLUE,TYPES.RED,TYPES.GREEN,TYPES.YELLOW,TYPES.OJAMA,TYPES.PURPLE,TYPES.PURPLE,TYPES.PURPLE],
+      [TYPES.RED,TYPES.GREEN,TYPES.OJAMA,TYPES.YELLOW,TYPES.YELLOW,TYPES.OJAMA,TYPES.OJAMA,TYPES.OJAMA]
+    ],
+    5: [
+      [TYPES.GREEN,TYPES.BLUE,TYPES.YELLOW,TYPES.YELLOW,TYPES.OJAMA,TYPES.PURPLE,TYPES.PURPLE,TYPES.OJAMA],
+      [TYPES.BLUE,TYPES.OJAMA,TYPES.YELLOW,TYPES.OJAMA,TYPES.PURPLE,TYPES.YELLOW,TYPES.PURPLE,TYPES.GREEN],
+      [TYPES.GREEN,TYPES.BLUE,TYPES.BLUE,TYPES.YELLOW,TYPES.OJAMA,TYPES.BLUE,TYPES.RED,TYPES.GREEN],
+      [TYPES.GREEN,TYPES.RED,TYPES.YELLOW,TYPES.BLUE,TYPES.BLUE,TYPES.PURPLE,TYPES.GREEN,TYPES.RED],
+      [TYPES.GREEN,TYPES.OJAMA,TYPES.RED,TYPES.YELLOW,TYPES.YELLOW,TYPES.YELLOW,TYPES.GREEN,TYPES.RED],
+      [TYPES.RED,TYPES.RED,TYPES.PURPLE,TYPES.PURPLE,TYPES.PURPLE,TYPES.OJAMA,TYPES.BLUE,TYPES.RED]
+    ],
+    6: [
+      [TYPES.RED,TYPES.YELLOW,TYPES.BLUE,TYPES.GREEN,TYPES.OJAMA,TYPES.BLUE,TYPES.OJAMA,TYPES.OJAMA],
+      [TYPES.RED,TYPES.YELLOW,TYPES.BLUE,TYPES.OJAMA,TYPES.OJAMA,TYPES.OJAMA,TYPES.YELLOW,TYPES.PURPLE],
+      [TYPES.RED,TYPES.PURPLE,TYPES.BLUE,TYPES.GREEN,TYPES.OJAMA,TYPES.PURPLE,TYPES.PURPLE,TYPES.OJAMA],
+      [TYPES.YELLOW,TYPES.BLUE,TYPES.OJAMA,TYPES.YELLOW,TYPES.YELLOW,TYPES.YELLOW,TYPES.BLUE,TYPES.PURPLE],
+      [TYPES.YELLOW,TYPES.OJAMA,TYPES.OJAMA,TYPES.OJAMA,TYPES.GREEN,TYPES.OJAMA,TYPES.OJAMA,TYPES.BLUE],
+      [TYPES.RED,TYPES.OJAMA,TYPES.PURPLE,TYPES.PURPLE,TYPES.PURPLE,TYPES.GREEN,TYPES.BLUE,TYPES.BLUE]
+    ],
+    7: [
+      [TYPES.OJAMA,TYPES.OJAMA,TYPES.BLUE,TYPES.PURPLE,TYPES.OJAMA,TYPES.RED,TYPES.RED,TYPES.OJAMA],
+      [TYPES.OJAMA,TYPES.OJAMA,TYPES.OJAMA,TYPES.OJAMA,TYPES.PURPLE,TYPES.PURPLE,TYPES.PURPLE,TYPES.OJAMA],
+      [TYPES.YELLOW,TYPES.OJAMA,TYPES.GREEN,TYPES.BLUE,TYPES.BLUE,TYPES.BLUE,TYPES.OJAMA,TYPES.RED],
+      [TYPES.PURPLE,TYPES.PURPLE,TYPES.RED,TYPES.RED,TYPES.RED,TYPES.OJAMA,TYPES.YELLOW,TYPES.RED],
+      [TYPES.BLUE,TYPES.GREEN,TYPES.GREEN,TYPES.GREEN,TYPES.OJAMA,TYPES.YELLOW,TYPES.OJAMA,TYPES.RED],
+      [TYPES.YELLOW,TYPES.YELLOW,TYPES.YELLOW,TYPES.OJAMA,TYPES.OJAMA,TYPES.OJAMA,TYPES.YELLOW,TYPES.YELLOW]
+    ],
+    8: [
+      [TYPES.BLUE,TYPES.GREEN,TYPES.RED,TYPES.OJAMA,TYPES.PURPLE,TYPES.PURPLE,TYPES.PURPLE,TYPES.OJAMA],
+      [TYPES.PURPLE,TYPES.BLUE,TYPES.GREEN,TYPES.YELLOW,TYPES.GREEN,TYPES.GREEN,TYPES.OJAMA,TYPES.PURPLE],
+      [TYPES.YELLOW,TYPES.YELLOW,TYPES.YELLOW,TYPES.OJAMA,TYPES.YELLOW,TYPES.YELLOW,TYPES.OJAMA,TYPES.YELLOW],
+      [TYPES.PURPLE,TYPES.OJAMA,TYPES.OJAMA,TYPES.OJAMA,TYPES.OJAMA,TYPES.OJAMA,TYPES.GREEN,TYPES.GREEN],
+      [TYPES.PURPLE,TYPES.BLUE,TYPES.GREEN,TYPES.RED,TYPES.RED,TYPES.RED,TYPES.YELLOW,TYPES.OJAMA],
+      [TYPES.PURPLE,TYPES.BLUE,TYPES.GREEN,TYPES.PURPLE,TYPES.YELLOW,TYPES.GREEN,TYPES.BLUE,TYPES.RED]
+    ]
+  };
+
+  const PRESET_BOARDS = {
+    1: [
+      [TYPES.RED,    TYPES.GREEN,  TYPES.BLUE,   TYPES.RED,    TYPES.PURPLE, TYPES.BLUE,   TYPES.HEART, TYPES.BLUE],
+      [TYPES.PURPLE, TYPES.YELLOW, TYPES.BLUE,   TYPES.RED,    TYPES.YELLOW, TYPES.PURPLE, TYPES.YELLOW,TYPES.PURPLE],
+      [TYPES.HEART,  TYPES.PURPLE, TYPES.PURPLE, TYPES.BLUE,   TYPES.RED,    TYPES.RED,    TYPES.YELLOW,TYPES.PURPLE],
+      [TYPES.YELLOW, TYPES.GREEN,  TYPES.YELLOW, TYPES.GREEN,  TYPES.PURPLE, TYPES.GREEN,  TYPES.RED,   TYPES.BLUE],
+      [TYPES.YELLOW, TYPES.GREEN,  TYPES.YELLOW, TYPES.GREEN,  TYPES.RED,    TYPES.YELLOW, TYPES.BLUE,  TYPES.HEART],
+      [TYPES.GREEN,  TYPES.YELLOW, TYPES.GREEN,  TYPES.PURPLE, TYPES.GREEN,  TYPES.GREEN,  TYPES.PURPLE,TYPES.BLUE]
+    ],
+    2: [
+      [TYPES.RED,    TYPES.PURPLE, TYPES.HEART,  TYPES.PURPLE, TYPES.YELLOW, TYPES.GREEN,  TYPES.YELLOW,TYPES.YELLOW],
+      [TYPES.RED,    TYPES.YELLOW, TYPES.PURPLE, TYPES.HEART,  TYPES.YELLOW, TYPES.GREEN,  TYPES.PURPLE,TYPES.GREEN],
+      [TYPES.BLUE,   TYPES.YELLOW, TYPES.GREEN,  TYPES.BLUE,   TYPES.HEART,  TYPES.YELLOW, TYPES.GREEN, TYPES.PURPLE],
+      [TYPES.BLUE,   TYPES.RED,    TYPES.BLUE,   TYPES.RED,    TYPES.PURPLE, TYPES.BLUE,   TYPES.RED,   TYPES.PURPLE],
+      [TYPES.YELLOW, TYPES.GREEN,  TYPES.PURPLE, TYPES.PURPLE, TYPES.RED,    TYPES.BLUE,   TYPES.GREEN, TYPES.GREEN],
+      [TYPES.BLUE,   TYPES.GREEN,  TYPES.BLUE,   TYPES.RED,    TYPES.BLUE,   TYPES.YELLOW, TYPES.RED,   TYPES.RED]
+    ]
+  };
+
+  function mountActionControlsLeft() {
+    const mount = document.getElementById("leftActionMount");
+    if (!mount) return;
+
+    const moveNode = node => {
+      if (node) mount.appendChild(node);
+    };
+
+    const addSep = () => {
+      const div = document.createElement("div");
+      div.style.height = "10px";
+      mount.appendChild(div);
+    };
+
+    moveNode(document.getElementById("resolve"));
+    moveNode(document.getElementById("clearSelect"));
+    moveNode(document.getElementById("reset"));
+    addSep();
+
+    const special = document.getElementById("specialBoard");
+    if (special) {
+      const row = special.closest(".coefRow");
+      const label = row ? row.previousElementSibling : null;
+      const tiny = row ? row.nextElementSibling : null;
+      moveNode(label);
+      moveNode(row);
+      if (tiny && tiny.classList && tiny.classList.contains("tiny")) moveNode(tiny);
+      addSep();
+    }
+
+    moveNode(document.getElementById("paintModeBtn"));
+    moveNode(document.getElementById("applyPaintBtn"));
+    addSep();
+
+    const speed2 = document.getElementById("speed2");
+    if (speed2) {
+      const row = speed2.closest(".coefRow");
+      const label = row ? row.previousElementSibling : null;
+      const tiny = row ? row.nextElementSibling : null;
+      moveNode(label);
+      moveNode(row);
+      if (tiny && tiny.classList && tiny.classList.contains("tiny")) moveNode(tiny);
+    }
+  }
+
+  const canvas = document.getElementById("canvas");
+  const ctx = canvas.getContext("2d");
+  const chainEl = document.getElementById("chain");
+  const totalMultiplierEl = document.getElementById("totalMultiplier");
+  const selectedEl = document.getElementById("selected");
+  const limitEl = document.getElementById("limit");
+  const limitLabel = document.getElementById("limitLabel");
+  const limitView = document.getElementById("limitView");
+  const resolveBtn = document.getElementById("resolve");
+  const resetBtn = document.getElementById("reset");
+  const clearSelectBtn = document.getElementById("clearSelect");
+  const chainLogEl = document.getElementById("chainLog");
+  const emptyLogEl = document.getElementById("emptyLog");
+  const clearCountGridEl = document.getElementById("clearCountGrid");
+  const resetClearCountsBtn = document.getElementById("resetClearCounts");
+  const boostModeBtn = document.getElementById("boostModeBtn");
+  const boostCountGridEl = document.getElementById("boostCountGrid");
+  const pauseReplayBtn = document.getElementById("pauseReplayBtn");
+  const stepBackBtn = document.getElementById("stepBackBtn");
+  const stepForwardBtn = document.getElementById("stepForwardBtn");
+  const saveSlotSelectEl = document.getElementById("saveSlotSelect");
+  const saveSlotBtn = document.getElementById("saveSlotBtn");
+  const loadSlotBtn = document.getElementById("loadSlotBtn");
+  const deleteSlotBtn = document.getElementById("deleteSlotBtn");
+  const sataekoTypeEl = document.getElementById("sataekoType");
+  const sataekoSeedBoardEl = document.getElementById("sataekoSeedBoard");
+  const applySataekoSeedBtn = document.getElementById("applySataekoSeed");
+  const enableSataekoChaseEl = document.getElementById("enableSataekoChase");
+  const sataekoChaseBoardEl = document.getElementById("sataekoChaseBoard");
+  const boostMultiplierTextEl = document.getElementById("boostMultiplierText");
+  const nextColorEl = document.getElementById("nextColor");
+  const convertNextBtn = document.getElementById("convertNext");
+  const convertNextPlusBtn = document.getElementById("convertNextPlus");
+  const keepNextConvertEl = document.getElementById("keepNextConvert");
+  const nextOnlyModeEl = document.getElementById("nextOnlyMode");
+  const simulCoefEl = document.getElementById("simulCoef");
+  const applyCoefBtn = document.getElementById("applyCoef");
+  const multGridEl = document.getElementById("multGrid");
+  const chainScaleEl = document.getElementById("chainScale");
+  const applyChainCoefBtn = document.getElementById("applyChainCoef");
+  const speed2Btn = document.getElementById("speed2");
+  const speed3Btn = document.getElementById("speed3");
+  const specialBoardEl = document.getElementById("specialBoard");
+  const applySpecialBtn = document.getElementById("applySpecial");
+  const ojamaSeedBoardEl = document.getElementById("ojamaSeedBoard");
+  const applyOjamaSeedBtn = document.getElementById("applyOjamaSeed");
+  const paintColorEl = document.getElementById("paintColor");
+  const allowHeartPaintEl = document.getElementById("allowHeartPaint");
+  const paintModeBtn = document.getElementById("paintModeBtn");
+  const applyPaintBtn = document.getElementById("applyPaintBtn");
+
+  let board = [];
+  let nextRow = [];
+  let persistentNextColor = null;
+  let persistentNextPlus = false;
+  let selected = [];
+  let selectedEdges = []; // 選択済みマス同士の接続線。最後に触った場所ではなく、隣接する選択済みマスから線を伸ばす。
+  let traceCursor = null;
+  let tracing = false;
+  let maxTrace = Number(limitEl.value);
+  let totalMultiplier = 0;
+  let colorMultipliers = {};
+  let cumulativeClearCounts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
+  let boostAreaMode = false;
+  let boostCells = new Set();
+  let boostCounts = { 1:0,2:0,3:0,4:0,5:0,6:0,7:0,total:0 };
+  let sataekoSystemEnabled = false;
+  let sataekoChaseAlreadyTriggered = false;
+  let sataekoStopAfterChaseAllClear = false;
+  let replayPaused = false;
+  let replaySnapshots = [];
+  let replayIndex = -1;
+  let savedBoards = {};
+  let multiplierLineCache = {};
+  let clearCountCache = {};
+  let boostCountCache = {};
+  let chainLogRenderedCount = 0;
+  let simultaneousCoef = 0.15;
+  let chainScale = 1.0;
+  let lastChain = 0;
+  let busy = false;
+  let currentHighlight = null;
+  let currentHighlightMode = "";
+  let chainLog = [];
+  let hiddenQueue = []; // ネクネク以降。ここだけ連結しきい値以上禁止。
+  let turnInitialNext = null; // ターン開始時に見えていた初期NEXT
+  let turnInitialNextUsed = null; // 各列の初期NEXT使用済み管理
+  let turnInProgress = false;
+  let specialRule = false;
+  let eraseThreshold = 4;
+  let simultaneousBase = 4;
+  let paintMode = false;
+  let paintSelected = [];
+
+  let speedMultiplier = 1;
+
+  function sleep(ms) {
+    return new Promise(resolve => {
+      let remaining = ms;
+      let last = performance.now();
+
+      function tick() {
+        const now = performance.now();
+        const elapsed = now - last;
+        last = now;
+        remaining -= elapsed * speedMultiplier;
+
+        if (remaining <= 0) resolve();
+        else setTimeout(tick, 16);
+      }
+
+      tick();
+    });
+  }
+
+  function geom() {
+    const pad = 26;
+    const cell = Math.floor((canvas.width - pad * 2) / COLS);
+    const nextTop = 26;
+    const boardTop = nextTop + cell + 28;
+    return { pad, cell, nextTop, boardTop };
+  }
+
+  function inBounds(x, y) {
+    return x >= 0 && x < COLS && y >= 0 && y < ROWS;
+  }
+
+  function neighbors4(x, y) {
+    const out = [];
+    for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]) {
+      const nx = x + dx, ny = y + dy;
+      if (inBounds(nx, ny)) out.push([nx, ny]);
+    }
+    return out;
+  }
+
+  const PLUS_OFFSET = 10;
+
+  function baseType(type) {
+    return type >= PLUS_OFFSET ? type - PLUS_OFFSET : type;
+  }
+
+  function isPlusPuyo(type) {
+    return type >= PLUS_OFFSET && type < PLUS_OFFSET + 10;
+  }
+
+  function makePlus(type) {
+    const b = baseType(type);
+    if (!ATTACK_COLORS.includes(b)) return type;
+    return b + PLUS_OFFSET;
+  }
+
+  function makeNormal(type) {
+    return baseType(type);
+  }
+
+  function sameColorType(a, b) {
+    return baseType(a) === baseType(b);
+  }
+
+  function isAttackPuyo(type) {
+    return ATTACK_COLORS.includes(baseType(type));
+  }
+
+  function puyoCountValue(type) {
+    return isPlusPuyo(type) ? 2 : 1;
+  }
+
+  function randomBoardPuyo() {
+    const r = Math.random();
+    if (r < .19) return TYPES.RED;
+    if (r < .38) return TYPES.BLUE;
+    if (r < .57) return TYPES.GREEN;
+    if (r < .76) return TYPES.YELLOW;
+    if (r < .95) return TYPES.PURPLE;
+    return TYPES.HEART;
+  }
+
+  function randomNextPuyo() {
+    // 表示NEXT/初期NEXT専用。ハートなし。
+    return COLOR_TYPES[Math.floor(Math.random() * COLOR_TYPES.length)];
+  }
+
+  function randomSupplyPuyo() {
+    // ネクネク以降・通常落下ぷよ用。
+    // 盤面生成と同じく、ハート5%、各色19%。
+    return randomBoardPuyo();
+  }
+
+  function virtualGroupSize(vrows, sx, sy) {
+    const type = vrows[sy]?.[sx];
+    if (!type || baseType(type) === TYPES.HEART) return 0;
+    const H = vrows.length;
+    const seen = new Set([`${sx},${sy}`]);
+    const q = [[sx, sy]];
+    for (let i = 0; i < q.length; i++) {
+      const [x, y] = q[i];
+      for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]) {
+        const nx = x + dx, ny = y + dy;
+        if (nx < 0 || nx >= COLS || ny < 0 || ny >= H) continue;
+        const key = `${nx},${ny}`;
+        if (!seen.has(key) && sameColorType(vrows[ny][nx], type)) {
+          seen.add(key);
+          q.push([nx, ny]);
+        }
+      }
+    }
+    return seen.size;
+  }
+
+  function makeSafeNextForColumn(x) {
+    // 表示NEXTは4連許可
+    return randomNextPuyo();
+  }
+
+  function queueWouldCreateThreshold(row, col, type) {
+    // hiddenQueue内部だけで4連を作るか確認。
+    // 盤面との接続は見ない。
+    const virtual = hiddenQueue.map(r => r.slice());
+
+    while (virtual.length <= row) {
+      virtual.push(Array(COLS).fill(null));
+    }
+
+    virtual[row][col] = type;
+
+    const target = type;
+    if (!target || baseType(target) === TYPES.HEART || baseType(target) === TYPES.OJAMA) return false;
+
+    const seen = new Set([`${col},${row}`]);
+    const q = [[col, row]];
+
+    for (let i = 0; i < q.length; i++) {
+      const [x, y] = q[i];
+
+      for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]) {
+        const nx = x + dx;
+        const ny = y + dy;
+
+        if (nx < 0 || nx >= COLS || ny < 0 || ny >= virtual.length) continue;
+        const key = `${nx},${ny}`;
+
+        if (!seen.has(key) && sameColorType(virtual[ny][nx], target)) {
+          seen.add(key);
+          q.push([nx, ny]);
+        }
+      }
+    }
+
+    return seen.size >= eraseThreshold;
+  }
+
+  function generateSafeHiddenRow() {
+    // ネクネク以降の1行を生成。
+    // hiddenQueue内部だけで4連禁止。
+    const rowIndex = hiddenQueue.length;
+    const row = Array(COLS).fill(null);
+
+    for (let x = 0; x < COLS; x++) {
+      let placed = false;
+
+      for (let attempt = 0; attempt < 80; attempt++) {
+        const t = randomSupplyPuyo();
+
+        row[x] = t;
+
+        // 一時pushして判定
+        hiddenQueue.push(row.slice());
+
+        const bad = queueWouldCreateThreshold(rowIndex, x, t);
+
+        hiddenQueue.pop();
+
+        if (!bad) {
+          placed = true;
+          break;
+        }
+      }
+
+      if (!placed) {
+        row[x] = randomSupplyPuyo();
+      }
+    }
+
+    return row;
+  }
+
+  function ensureHiddenQueue() {
+    while (hiddenQueue.length < 40) {
+      hiddenQueue.push(generateSafeHiddenRow());
+    }
+  }
+
+  function compactHiddenQueue() {
+    // 完全に消費された行だけを取り除く。
+    while (hiddenQueue.length && hiddenQueue[0].every(v => v == null)) {
+      hiddenQueue.shift();
+    }
+  }
+
+  function pullHiddenPuyo(x) {
+    ensureHiddenQueue();
+
+    // v18 修正:
+    // 同じ列に複数個のネクネク以降が必要な場合でも、
+    // randomNextPuyo()へ逃げず、必ずhiddenQueue内の次の有効セルから取る。
+    // これで「安全生成されていないランダムぷよ」が混入しなくなる。
+    let rowIndex = -1;
+    for (let r = 0; r < hiddenQueue.length; r++) {
+      if (hiddenQueue[r][x] != null) {
+        rowIndex = r;
+        break;
+      }
+    }
+
+    if (rowIndex === -1) {
+      ensureHiddenQueue();
+      for (let r = 0; r < hiddenQueue.length; r++) {
+        if (hiddenQueue[r][x] != null) {
+          rowIndex = r;
+          break;
+        }
+      }
+    }
+
+    // ここまで来ても無い場合は、キュー生成の異常なので保険。
+    // ただし通常は到達しない。
+    if (rowIndex === -1) {
+      const fallbackRow = generateSafeHiddenRow();
+      hiddenQueue.push(fallbackRow);
+      rowIndex = hiddenQueue.length - 1;
+    }
+
+    const value = hiddenQueue[rowIndex][x];
+    hiddenQueue[rowIndex][x] = null;
+
+    compactHiddenQueue();
+    ensureHiddenQueue();
+
+    return value;
+  }
+
+  function applyPersistentNextSettingsToValue(value) {
+    let b = baseType(value);
+
+    if (persistentNextColor && COLOR_TYPES.includes(persistentNextColor)) {
+      b = persistentNextColor;
+    }
+
+    if (persistentNextPlus && ATTACK_COLORS.includes(b)) {
+      return makePlus(b);
+    }
+
+    return makeNormal(b);
+  }
+
+  function applyPersistentNextSettingsToVisibleNext() {
+    if (!keepNextConvertEl || !keepNextConvertEl.checked) return;
+
+    for (let x = 0; x < COLS; x++) {
+      if (nextRow[x] === TYPES.EMPTY || nextRow[x] == null) continue;
+      nextRow[x] = applyPersistentNextSettingsToValue(nextRow[x]);
+    }
+  }
+
+  function rememberNextColorIfNeeded(type) {
+    if (!keepNextConvertEl || !keepNextConvertEl.checked) return;
+    if (COLOR_TYPES.includes(type)) persistentNextColor = type;
+  }
+
+  function rememberNextPlusIfNeeded() {
+    if (!keepNextConvertEl || !keepNextConvertEl.checked) return;
+    persistentNextPlus = true;
+  }
+
+  function refillNextSlot(x) {
+    // 表示NEXTは4連許可。
+    nextRow[x] = makeSafeNextForColumn(x);
+    applyPersistentNextSettingsToVisibleNext();
+  }
+
+  function refillAllNext() {
+    // v13:
+    // 表示NEXTだけは4連以上を許可。
+    // つまり安全生成を外し、自由な並びを許容する。
+    nextRow = Array.from({ length: COLS }, () => randomNextPuyo());
+    applyPersistentNextSettingsToVisibleNext();
+  }
+
+  function convertVisibleNextToPlus() {
+    // 表示中NEXTだけを、その時点でプラスぷよ化する。
+    // チェックON時は、盤面変更後に生成されるNEXTにも引き継ぐ。
+    if (busy) return;
+    rememberNextPlusIfNeeded();
+
+    for (let x = 0; x < COLS; x++) {
+      const b = baseType(nextRow[x]);
+      if (ATTACK_COLORS.includes(b)) nextRow[x] = makePlus(b);
+    }
+    draw();
+  }
+
+  function convertVisibleNextTo(type) {
+    // 表示中のNEXTだけを、その時点で変換する。
+    // チェックON時は、盤面変更後に生成されるNEXTにも引き継ぐ。
+    if (busy) return;
+    if (!COLOR_TYPES.includes(type)) return;
+    rememberNextColorIfNeeded(type);
+
+    for (let x = 0; x < COLS; x++) {
+      nextRow[x] = isPlusPuyo(nextRow[x]) ? makePlus(type) : makeNormal(type);
+    }
+    draw();
+  }
+
+  function countGroupOnBoard(sx, sy) {
+    const type = board[sy]?.[sx];
+    if (!type || baseType(type) === TYPES.HEART) return 0;
+    const seen = new Set([`${sx},${sy}`]);
+    const q = [[sx, sy]];
+    for (let i = 0; i < q.length; i++) {
+      const [x, y] = q[i];
+      for (const [nx, ny] of neighbors4(x, y)) {
+        const key = `${nx},${ny}`;
+        if (!seen.has(key) && sameColorType(board[ny][nx], type)) {
+          seen.add(key);
+          q.push([nx, ny]);
+        }
+      }
+    }
+    return seen.size;
+  }
+
+  function findEraseSet() {
+    const visited = new Set();
+    const erase = new Set();
+
+    for (let y = 0; y < ROWS; y++) {
+      for (let x = 0; x < COLS; x++) {
+        const type = board[y][x];
+        if (!type || baseType(type) === TYPES.HEART || baseType(type) === TYPES.OJAMA) continue;
+
+        const key0 = `${x},${y}`;
+        if (visited.has(key0)) continue;
+
+        const group = [];
+        const q = [[x, y]];
+        visited.add(key0);
+
+        for (let i = 0; i < q.length; i++) {
+          const [cx, cy] = q[i];
+          group.push([cx, cy]);
+          for (const [nx, ny] of neighbors4(cx, cy)) {
+            const key = `${nx},${ny}`;
+            if (!visited.has(key) && sameColorType(board[ny][nx], type)) {
+              visited.add(key);
+              q.push([nx, ny]);
+            }
+          }
+        }
+
+        if (group.length >= eraseThreshold) {
+          for (const [gx, gy] of group) erase.add(`${gx},${gy}`);
+          for (const [gx, gy] of group) {
+            for (const [hx, hy] of neighbors4(gx, gy)) {
+              if (baseType(board[hy][hx]) === TYPES.HEART || baseType(board[hy][hx]) === TYPES.OJAMA) erase.add(`${hx},${hy}`);
+            }
+          }
+        }
+      }
+    }
+    return erase;
+  }
+
+  function summarizeEraseSet(eraseSet) {
+    const counts = {};
+    for (const key of eraseSet) {
+      const [x, y] = key.split(",").map(Number);
+      const type = board[y]?.[x];
+      if (!type) continue;
+      const b = baseType(type);
+      if (b !== TYPES.HEART) counts[b] = (counts[b] || 0) + puyoCountValue(type);
+    }
+
+    const parts = [];
+    for (const type of LOG_ORDER) {
+      if (counts[type]) {
+        parts.push(`${TYPE_NAMES[type]}${counts[type]}個`);
+      }
+    }
+    return parts;
+  }
+
+  function updateChainLog(forceRebuild = false) {
+    if (forceRebuild) {
+      chainLogEl.innerHTML = "";
+      chainLogRenderedCount = 0;
+    }
+
+    emptyLogEl.style.display = chainLog.length ? "none" : "block";
+
+    while (chainLogRenderedCount < chainLog.length) {
+      const entry = chainLog[chainLogRenderedCount];
+
+      const li = document.createElement("li");
+
+      const detail = entry.detail
+        ? ` / 同時${entry.detail.simultaneousMultiplier.toFixed(2)}倍 / 連鎖${entry.detail.chainMul.toFixed(2)}倍`
+        : "";
+
+      const colorDetail = entry.detail
+        ? entry.detail.colorResults
+            .map(r => `${TYPE_NAMES[r.type]}分離${r.groups}倍→${r.finalMultiplier.toFixed(2)}倍`)
+            .join("　")
+        : "";
+
+      li.innerHTML =
+        `<strong>${entry.chain}連鎖目</strong> ${entry.parts.join("　")}${detail}${colorDetail ? "<br>" + colorDetail : ""}`;
+
+      chainLogEl.appendChild(li);
+      chainLogRenderedCount++;
+    }
+  }
+
+  function baseChainMultiplier(chain) {
+    if (chain <= 1) return 1.0;
+    if (chain === 2) return 1.4;
+    if (chain === 3) return 1.7;
+    if (chain === 4) return 2.0;
+    return 2.0 + (chain - 4) * 0.2;
+  }
+
+  function chainMultiplier(chain) {
+    return baseChainMultiplier(chain) * chainScale;
+  }
+
+  function applyChainSettings() {
+    const value = Number(chainScaleEl.value);
+    chainScale = Number.isFinite(value) && value >= 0 ? value : 1.0;
+    chainScaleEl.value = chainScale.toFixed(1);
+  }
+
+  function resetMultipliers() {
+    totalMultiplier = 0;
+    colorMultipliers = {};
+    for (const type of ATTACK_COLORS) colorMultipliers[type] = 0;
+  }
+
+  function updateMultiplierDisplay() {
+    const boostedTotal = totalMultiplier * (1 + currentBoostMultiplier());
+
+    totalMultiplierEl.textContent = boostedTotal.toFixed(2);
+
+    for (const type of ATTACK_COLORS) {
+      if (!multiplierLineCache[type]) {
+        const line = document.createElement("div");
+        line.className = "multLine";
+
+        const left = document.createElement("span");
+        left.textContent = TYPE_NAMES[type];
+
+        const right = document.createElement("strong");
+
+        line.appendChild(left);
+        line.appendChild(right);
+
+        multiplierLineCache[type] = { line, right };
+        multGridEl.appendChild(line);
+      }
+
+      const base = colorMultipliers[type] || 0;
+      const boosted = base * (1 + currentBoostMultiplier());
+
+      const boostText = currentBoostMultiplier() > 0
+        ? ` <span class="boostedMult">(${boosted.toFixed(2)}倍)</span>`
+        : "";
+
+      multiplierLineCache[type].right.innerHTML =
+        `${base.toFixed(2)}倍${boostText}`;
+    }
+  }
+
+  function updateClearCountDisplay() {
+    const order = [TYPES.RED, TYPES.BLUE, TYPES.GREEN, TYPES.YELLOW, TYPES.PURPLE, TYPES.HEART];
+
+    for (const type of order) {
+      if (!clearCountCache[type]) {
+        const item = document.createElement("div");
+        item.className = "clearCountItem";
+
+        const label = document.createElement("span");
+        label.textContent = TYPE_NAMES[type];
+
+        const value = document.createElement("strong");
+
+        item.appendChild(label);
+        item.appendChild(value);
+
+        clearCountCache[type] = value;
+        clearCountGridEl.appendChild(item);
+      }
+
+      clearCountCache[type].textContent = cumulativeClearCounts[type] || 0;
+    }
+  }
+
+  function addToCumulativeClearCounts(eraseSet) {
+    for (const key of eraseSet) {
+      const [x, y] = key.split(",").map(Number);
+      const type = board[y]?.[x];
+      const b = baseType(type);
+
+      // ここでは「連鎖で消えた」各色ぷよとハートボックスの累計だけを表示対象にする。
+      // プラスぷよは1個につき2個分として数える。
+      // おじゃまぷよは今回の表示対象外。
+      if ([TYPES.RED, TYPES.BLUE, TYPES.GREEN, TYPES.YELLOW, TYPES.PURPLE].includes(b)) {
+        cumulativeClearCounts[b] = (cumulativeClearCounts[b] || 0) + puyoCountValue(type);
+      } else if (b === TYPES.HEART) {
+        cumulativeClearCounts[b] = (cumulativeClearCounts[b] || 0) + 1;
+      }
+    }
+
+    updateClearCountDisplay();
+  updateBoostCountDisplay();
+  updateBoostMultiplierText();
+  }
+
+
+  function boostKey(x, y) {
+    return `${x},${y}`;
+  }
+
+  function isBoostCell(x, y) {
+    return boostCells.has(boostKey(x, y));
+  }
+
+  function toggleBoostCell(pos) {
+    if (!pos || busy) return;
+
+    const key = boostKey(pos.x, pos.y);
+
+    if (boostCells.has(key)) boostCells.delete(key);
+    else boostCells.add(key);
+
+    draw();
+  }
+
+  function updateBoostCountDisplay() {
+    boostCountGridEl.innerHTML = "";
+
+    const order = [
+      [TYPES.RED, "赤"],
+      [TYPES.BLUE, "青"],
+      [TYPES.GREEN, "緑"],
+      [TYPES.YELLOW, "黄"],
+      [TYPES.PURPLE, "紫"],
+      [TYPES.HEART, "ハート"],
+      [TYPES.OJAMA, "おじゃま"],
+    ];
+
+    for (const [type, label] of order) {
+      const item = document.createElement("div");
+      item.className = "clearCountItem";
+      item.innerHTML = `<span>${label}</span><strong>${boostCounts[type] || 0}</strong>`;
+      boostCountGridEl.appendChild(item);
+    }
+
+    const total = document.createElement("div");
+    total.className = "clearCountItem";
+    total.innerHTML = `<span>合計</span><strong>${boostCounts.total || 0}</strong>`;
+    boostCountGridEl.appendChild(total);
+  }
+
+  function resetBoostCounts() {
+    boostCounts = { 1:0,2:0,3:0,4:0,5:0,6:0,7:0,total:0 };
+    updateBoostCountDisplay();
+    updateBoostMultiplierText();
+    updateMultiplierDisplay();
+    updateBoostMultiplierText();
+    updateMultiplierDisplay();
+  }
+
+  function addBoostEraseCounts(eraseSet) {
+    for (const key of eraseSet) {
+      const [x, y] = key.split(",").map(Number);
+
+      if (!isBoostCell(x, y)) continue;
+
+      const type = board[y]?.[x];
+      const b = baseType(type);
+
+      let amount = 1;
+
+      if ([TYPES.RED, TYPES.BLUE, TYPES.GREEN, TYPES.YELLOW, TYPES.PURPLE].includes(b)) {
+        amount = puyoCountValue(type);
+      }
+
+      if ([1,2,3,4,5,6,7].includes(b)) {
+        boostCounts[b] = (boostCounts[b] || 0) + amount;
+        boostCounts.total += amount;
+      }
+    }
+
+    updateBoostCountDisplay();
+  }
+
+  function currentBoostMultiplier() {
+    return Math.min(2.0, (boostCounts.total || 0) * 0.04);
+  }
+
+  function updateBoostMultiplierText() {
+    const percent = Math.round(currentBoostMultiplier() * 100);
+    const finalMul = (1 + currentBoostMultiplier()).toFixed(2);
+
+    boostMultiplierTextEl.textContent =
+      `現在のブースト倍率: +${percent}% / 最終 ${finalMul}倍`;
+  }
+
+
+
+  function cloneBoardState() {
+    return board.map(row => row.slice());
+  }
+
+  function selectedToHighlightSet() {
+    if (!selected || !selected.length) return null;
+    return new Set(selected.map(p => `${p.x},${p.y}`));
+  }
+
+  function recordReplaySnapshot(label = "") {
+    replaySnapshots.push({
+      label,
+      board: cloneBoardState(),
+      lastChain,
+      chainLog: JSON.parse(JSON.stringify(chainLog || [])),
+      totalMultiplier,
+      colorMultipliers: JSON.parse(JSON.stringify(colorMultipliers || {})),
+      cumulativeClearCounts: JSON.parse(JSON.stringify(cumulativeClearCounts || {})),
+      boostCounts: JSON.parse(JSON.stringify(boostCounts || {})),
+      currentHighlight: currentHighlight ? Array.from(currentHighlight) : null,
+      currentHighlightMode: currentHighlightMode || ""
+    });
+    replayIndex = replaySnapshots.length - 1;
+  }
+
+  function restoreReplaySnapshot(index) {
+    if (!replaySnapshots.length) return;
+
+    replayIndex = Math.max(0, Math.min(index, replaySnapshots.length - 1));
+    const snap = replaySnapshots[replayIndex];
+
+    board = snap.board.map(row => row.slice());
+    lastChain = snap.lastChain;
+    chainLog = JSON.parse(JSON.stringify(snap.chainLog || []));
+    totalMultiplier = snap.totalMultiplier || 0;
+    colorMultipliers = JSON.parse(JSON.stringify(snap.colorMultipliers || {}));
+    cumulativeClearCounts = JSON.parse(JSON.stringify(snap.cumulativeClearCounts || {}));
+    boostCounts = JSON.parse(JSON.stringify(snap.boostCounts || { 1:0,2:0,3:0,4:0,5:0,6:0,7:0,total:0 }));
+    currentHighlight = snap.currentHighlight ? new Set(snap.currentHighlight) : null;
+    currentHighlightMode = snap.currentHighlightMode || "";
+
+    const sideEl = document.querySelector(".side");
+    const sideScrollTop = sideEl ? sideEl.scrollTop : 0;
+
+    updateHUD();
+    updateChainLog();
+    updateMultiplierDisplay();
+    updateClearCountDisplay();
+    updateBoostCountDisplay();
+    if (typeof updateBoostMultiplierText === "function") updateBoostMultiplierText();
+    draw();
+
+    if (sideEl) sideEl.scrollTop = sideScrollTop;
+  }
+
+  function recordFinalReplaySnapshot(label = "最終盤面") {
+    currentHighlight = null;
+    currentHighlightMode = "";
+    recordReplaySnapshot(label);
+  }
+
+
+  function cloneSet(setObj) {
+    return Array.from(setObj || []);
+  }
+
+  function restoreSet(arr) {
+    return new Set(arr || []);
+  }
+
+  function saveCurrentBoardToSlot(slot) {
+    savedBoards[slot] = {
+      board: board.map(row => row.slice()),
+      nextRow: nextRow.slice(),
+      boostCells: cloneSet(boostCells),
+      specialRule,
+      eraseThreshold,
+      simultaneousBase
+    };
+  }
+
+  function loadBoardFromSlot(slot) {
+    const data = savedBoards[slot];
+    if (!data || busy) return false;
+
+    board = data.board.map(row => row.slice());
+    nextRow = data.nextRow.slice();
+    boostCells = restoreSet(data.boostCells);
+
+    specialRule = !!data.specialRule;
+    eraseThreshold = data.eraseThreshold;
+    simultaneousBase = data.simultaneousBase;
+
+    turnInProgress = false;
+    turnInitialNext = null;
+    turnInitialNextUsed = null;
+
+    selected = [];
+    selectedEdges = [];
+    traceCursor = null;
+    tracing = false;
+
+    currentHighlight = null;
+    currentHighlightMode = "";
+
+    updateHUD();
+    updateChainLog();
+    updateMultiplierDisplay();
+    updateClearCountDisplay();
+
+    if (typeof updateBoostCountDisplay === "function") updateBoostCountDisplay();
+    if (typeof updateBoostMultiplierText === "function") updateBoostMultiplierText();
+
+    draw();
+    return true;
+  }
+
+  function deleteBoardSlot(slot) {
+    delete savedBoards[slot];
+  }
+
+
+  function resetReplaySnapshots() {
+    replaySnapshots = [];
+    replayIndex = -1;
+    replayPaused = false;
+    pauseReplayBtn.classList.remove("activeMode");
+    pauseReplayBtn.textContent = "一時停止";
+  }
+
+  function waitUntilReplayResumed() {
+    if (!replayPaused) return Promise.resolve();
+
+    return new Promise(resolve => {
+      const timer = setInterval(() => {
+        if (!replayPaused) {
+          clearInterval(timer);
+          resolve();
+        }
+      }, 60);
+    });
+  }
+
+  async function animationPausePoint() {
+    await waitUntilReplayResumed();
+  }
+
+
+  function resetCumulativeClearCounts() {
+    cumulativeClearCounts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
+    updateClearCountDisplay();
+  }
+
+  function calculateMultiplierEntry(eraseSet, chain) {
+    const colorCount = {};
+    const groupCount = {};
+    let totalColoredPuyos = 0;
+
+    // この連鎖で消える色ぷよ数。ハートは除外。
+    for (const key of eraseSet) {
+      const [x, y] = key.split(",").map(Number);
+      const type = board[y]?.[x];
+      const b = baseType(type);
+      if (b === TYPES.HEART) continue;
+      const value = puyoCountValue(type);
+      totalColoredPuyos += value;
+      if (!ATTACK_COLORS.includes(b)) continue;
+      colorCount[b] = (colorCount[b] || 0) + value;
+    }
+
+    // 分離消し数：同じ色の消去対象が何グループに分かれているか。
+    const visited = new Set();
+    for (const key of eraseSet) {
+      if (visited.has(key)) continue;
+      const [sx, sy] = key.split(",").map(Number);
+      const type = board[sy]?.[sx];
+      const b = baseType(type);
+      if (!ATTACK_COLORS.includes(b)) continue;
+
+      groupCount[b] = (groupCount[b] || 0) + 1;
+
+      const q = [[sx, sy]];
+      visited.add(key);
+      for (let i = 0; i < q.length; i++) {
+        const [cx, cy] = q[i];
+        for (const [nx, ny] of neighbors4(cx, cy)) {
+          const nkey = `${nx},${ny}`;
+          if (!eraseSet.has(nkey) || visited.has(nkey)) continue;
+          if (!sameColorType(board[ny][nx], type)) continue;
+          visited.add(nkey);
+          q.push([nx, ny]);
+        }
+      }
+    }
+
+    const simultaneousMultiplier = totalColoredPuyos > 0
+      ? 1 + Math.max(0, totalColoredPuyos - simultaneousBase) * simultaneousCoef
+      : 0;
+    const chainMul = chainMultiplier(chain);
+
+    const colorResults = [];
+    for (const type of ATTACK_COLORS) {
+      if (!colorCount[type]) continue;
+      const separationMultiplier = groupCount[type] || 1;
+      // ブースト倍率はターン終了後に一括適用する。
+      const finalMultiplier = separationMultiplier * simultaneousMultiplier * chainMul;
+      colorMultipliers[type] = (colorMultipliers[type] || 0) + finalMultiplier;
+      totalMultiplier += finalMultiplier;
+
+      colorResults.push({
+        type,
+        count: colorCount[type],
+        groups: separationMultiplier,
+        finalMultiplier
+      });
+    }
+
+    return {
+      totalColoredPuyos,
+      simultaneousMultiplier,
+      chainMul,
+      colorResults
+    };
+  }
+
+  function hasAutoErase() {
+    return findEraseSet().size > 0;
+  }
+
+  function hasEmptyCell() {
+    for (let y = 0; y < ROWS; y++) {
+      for (let x = 0; x < COLS; x++) {
+        if (!board[y][x]) return true;
+      }
+    }
+    return false;
+  }
+
+  function spawnOneForColumn(x) {
+    const value = nextRow[x] || makeSafeNextForColumn(x);
+    refillNextSlot(x); // 消費した瞬間に補充するのでNEXT表示に空欄が残らない。
+    return value;
+  }
+
+  async function applyGravityAnimated(fillFromNext = false) {
+    let plannedSupply = null;
+
+    if (fillFromNext) {
+      plannedSupply = buildTurnSupplyForCurrentEmptyShape();
+    }
+
+    for (let x = 0; x < COLS; x++) {
+      const stack = [];
+
+      for (let y = ROWS - 1; y >= 0; y--) {
+        if (board[y][x]) stack.push(board[y][x]);
+      }
+
+      for (let y = ROWS - 1; y >= 0; y--) {
+        if (stack.length) {
+          board[y][x] = stack.shift();
+        } else if (!fillFromNext) {
+          board[y][x] = TYPES.EMPTY;
+        } else {
+          const key = `${x},${y}`;
+          board[y][x] = plannedSupply.has(key) ? plannedSupply.get(key) : TYPES.EMPTY;
+
+          // 重要:
+          // 連鎖中はNEXTゾーンを更新しない。
+          // 新しいNEXTは完全停止して次ターンに入る時だけ表示する。
+        }
+      }
+    }
+
+    draw();
+    await sleep(560);
+    await animationPausePoint();
+  }
+
+  function makeInitialBoard() {
+    board = Array.from({ length: ROWS }, () => Array(COLS).fill(TYPES.EMPTY));
+    hiddenQueue = [];
+    turnInProgress = false;
+    turnInitialNext = null;
+    turnInitialNextUsed = null;
+    ensureHiddenQueue();
+    refillAllNext();
+
+    for (let y = 0; y < ROWS; y++) {
+      for (let x = 0; x < COLS; x++) {
+        let placed = false;
+        for (let attempt = 0; attempt < 120; attempt++) {
+          board[y][x] = randomBoardPuyo();
+          if (countGroupOnBoard(x, y) < eraseThreshold) {
+            placed = true;
+            break;
+          }
+        }
+        if (!placed) board[y][x] = randomBoardPuyo();
+      }
+    }
+
+    refillAllNext();
+  }
+
+
+  function isPaintTargetAllowed(type) {
+    if (!type) return false;
+    const b = baseType(type);
+    if (b === TYPES.HEART || b === TYPES.OJAMA) return allowHeartPaintEl.checked;
+    return ATTACK_COLORS.includes(b);
+  }
+
+  function togglePaintSelection(pos) {
+    if (busy || !pos) return;
+    if (specialRule || eraseThreshold !== 4) return;
+    const type = board[pos.y]?.[pos.x];
+    if (!isPaintTargetAllowed(type)) return;
+
+    const idx = paintSelected.findIndex(p => p.x === pos.x && p.y === pos.y);
+    if (idx >= 0) paintSelected.splice(idx, 1);
+    else paintSelected.push({ x: pos.x, y: pos.y });
+    draw();
+  }
+
+  function setPaintMode(on) {
+    if (busy) return;
+    if (specialRule || eraseThreshold !== 4) {
+      paintMode = false;
+      paintSelected = [];
+    } else {
+      paintMode = on;
+      if (paintMode) {
+        selected = [];
+        selectedEdges = [];
+        traceCursor = null;
+        tracing = false;
+      }
+    }
+    paintModeBtn.classList.toggle("activeMode", paintMode);
+    draw();
+  }
+
+  async function resolveBoardUntilStableFromCurrentState() {
+    let chain = 0;
+    let safety = 0;
+
+    while (safety++ < 300) {
+      const erase = findEraseSet();
+
+      if (erase.size > 0) {
+        chain++;
+        lastChain = chain;
+
+        const parts = summarizeEraseSet(erase);
+        const detail = calculateMultiplierEntry(erase, chain);
+        chainLog.push({ chain, parts, detail });
+        updateHUD();
+        updateChainLog();
+        updateMultiplierDisplay();
+
+        currentHighlight = erase;
+        currentHighlightMode = "erase";
+        recordReplaySnapshot(`${chain}連鎖目 消去前`);
+        draw();
+        await sleep(860);
+
+        addToCumulativeClearCounts(erase);
+        addBoostEraseCounts(erase);
+
+        for (const key of erase) {
+          const [x, y] = key.split(",").map(Number);
+          board[y][x] = TYPES.EMPTY;
+        }
+
+        currentHighlight = null;
+        currentHighlightMode = "";
+        draw();
+        await sleep(360);
+
+        await applyGravityAnimated(false);
+        continue;
+      }
+
+      if (hasEmptyCell()) {
+        await sleep(260);
+        await animationPausePoint();
+        await applyGravityAnimated(true);
+
+        if (isNextOnlyMode() && hasEmptyCell()) break;
+
+        continue;
+      }
+
+      break;
+    }
+  }
+
+  async function applyPaintAndResolve() {
+    if (busy) return;
+    if (specialRule || eraseThreshold !== 4) return;
+    if (!paintSelected.length) return;
+
+    busy = true;
+    beginTurnIfNeeded();
+    resetReplaySnapshots();
+    recordReplaySnapshot("開始");
+    paintMode = false;
+    paintModeBtn.classList.remove("activeMode");
+
+    lastChain = 0;
+    chainLog = [];
+    chainLogRenderedCount = 0;
+    resetMultipliers();
+    simultaneousCoef = Number(simulCoefEl.value) || 0.15;
+    updateHUD();
+    updateChainLog();
+    updateMultiplierDisplay();
+
+    const paintModeValue = paintColorEl.value;
+    const plusOnly = paintModeValue === "plus";
+    const targetBase = plusOnly ? null : Number(paintModeValue);
+
+    const paintKeys = new Set(paintSelected.map(p => `${p.x},${p.y}`));
+    currentHighlight = paintKeys;
+    currentHighlightMode = "trace";
+    draw();
+    await sleep(420);
+        await animationPausePoint();
+
+    for (const { x, y } of paintSelected) {
+      const type = board[y]?.[x];
+      if (!isPaintTargetAllowed(type)) continue;
+
+      if (plusOnly) {
+        const b = baseType(type);
+        if (!ATTACK_COLORS.includes(b)) continue;
+        board[y][x] = makePlus(b);
+      } else {
+        board[y][x] = isPlusPuyo(type) ? makePlus(targetBase) : targetBase;
+      }
+    }
+
+    paintSelected = [];
+    currentHighlight = null;
+    currentHighlightMode = "";
+    draw();
+    await sleep(300);
+
+    await resolveBoardUntilStableFromCurrentState();
+
+    recordFinalReplaySnapshot("最終盤面");
+
+    endTurnAndRefreshNext();
+
+    recordFinalReplaySnapshot("最終盤面 NEXT補充後");
+
+    busy = false;
+    updateHUD();
+    updateChainLog();
+    updateMultiplierDisplay();
+    draw();
+  }
+
+
+
+  function beginTurnIfNeeded() {
+    // ターン中に見えているNEXTを固定する。
+    // この固定されたNEXTだけが「初期NEXT」として連結禁止ルールの外に置かれる。
+    if (!turnInProgress) {
+      // ブーストカウントは1ターンごとに0から数える。
+      resetBoostCounts();
+
+      turnInitialNext = nextRow.slice();
+      turnInitialNextUsed = Array(COLS).fill(false);
+      turnInProgress = true;
+    }
+  }
+
+  function endTurnAndRefreshNext() {
+    // 完全停止後、次ターン用のNEXTを表示する。
+    // ターン中に使用されて空になった枠だけ補充し、
+    // 未使用で残っているNEXTはそのまま次ターンの初期NEXTにする。
+    for (let x = 0; x < COLS; x++) {
+      if (nextRow[x] === TYPES.EMPTY || nextRow[x] == null) {
+        refillNextSlot(x);
+      }
+    }
+
+    turnInProgress = false;
+    turnInitialNext = null;
+    turnInitialNextUsed = null;
+  }
+
+  function supplyOnlyGroupSize(supplyMap, sx, sy) {
+    const startKey = `${sx},${sy}`;
+    const startType = supplyMap.get(startKey);
+    if (!startType || baseType(startType) === TYPES.HEART) return 0;
+
+    const seen = new Set([startKey]);
+    const q = [[sx, sy]];
+
+    for (let i = 0; i < q.length; i++) {
+      const [x, y] = q[i];
+
+      for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]) {
+        const nx = x + dx;
+        const ny = y + dy;
+        const key = `${nx},${ny}`;
+
+        if (!supplyMap.has(key) || seen.has(key)) continue;
+        if (!sameColorType(supplyMap.get(key), startType)) continue;
+
+        seen.add(key);
+        q.push([nx, ny]);
+      }
+    }
+
+    return seen.size;
+  }
+
+  function wouldSupplyCreateForbiddenGroup(supplyMap, x, y, type) {
+    const key = `${x},${y}`;
+    supplyMap.set(key, type);
+    const bad = supplyOnlyGroupSize(supplyMap, x, y) >= eraseThreshold;
+    supplyMap.delete(key);
+    return bad;
+  }
+
+  function makeSafeSupplyPuyoForEmptyShape(supplyMap, x, y) {
+    // ネクネク以降・通常落下ぷよ。
+    // 盤面生成と同じく、ハート5%、各色19%。
+    // ただし「落下ぷよのみ」で禁止連結数に達する色ぷよ候補は避ける。
+    for (let attempt = 0; attempt < 120; attempt++) {
+      const t = randomSupplyPuyo();
+
+      if (!wouldSupplyCreateForbiddenGroup(supplyMap, x, y, t)) return t;
+    }
+
+    // 保険。候補が詰まった場合もハートを含む通常分布から出す。
+    return randomSupplyPuyo();
+  }
+
+  function isNextOnlyMode() {
+    return !!(nextOnlyModeEl && nextOnlyModeEl.checked);
+  }
+
+  function buildTurnSupplyForCurrentEmptyShape() {
+    // 今回の補充フェーズで空いているマスだけを見る。
+    // 各列で最初に補充される1個だけ、ターン開始時に固定した初期NEXTを使える。
+    // それ以外はすべて「初期NEXT以降」のぷよとして、空きマス形状のみで連結禁止を守る。
+    const planned = new Map();
+    const restrictedSupplyMap = new Map();
+
+    beginTurnIfNeeded();
+
+    for (let x = 0; x < COLS; x++) {
+      const emptyYs = [];
+      for (let y = 0; y < ROWS; y++) {
+        if (!board[y][x]) emptyYs.push(y);
+      }
+
+      if (!emptyYs.length) continue;
+
+      const bottomToTop = emptyYs.slice().sort((a, b) => b - a);
+
+      for (let i = 0; i < bottomToTop.length; i++) {
+        const y = bottomToTop[i];
+        const key = `${x},${y}`;
+
+        if (!turnInitialNextUsed[x]) {
+          // この列の初期NEXTは1度だけ使える。
+          planned.set(key, turnInitialNext[x] || randomNextPuyo()); // 初期NEXT枠だけはハートなし
+          turnInitialNextUsed[x] = true;
+
+          // v29:
+          // 使用した初期NEXTの場所は、このターンが完全停止するまで空表示にする。
+          // 新しいNEXTはターン終了時にのみ補充される。
+          nextRow[x] = TYPES.EMPTY;
+        } else {
+          if (isNextOnlyMode()) {
+            // NEXTだけ降ってくるモードでは、見えているNEXTを使い切ったら補充しない。
+            continue;
+          }
+
+          // 初期NEXT以降。空きマス形状のみを参照して禁止連結を避ける。
+          const t = makeSafeSupplyPuyoForEmptyShape(restrictedSupplyMap, x, y);
+          planned.set(key, t);
+          restrictedSupplyMap.set(key, t);
+        }
+      }
+    }
+
+    return planned;
+  }
+
+  function getCurrentSataekoChaseBoard() {
+    const n = Number(sataekoChaseBoardEl.value) || 1;
+    return sataekoTypeEl.value === "shizu" ? SHIZU_CHASE_BOARDS[n] : SATAEKO_CHASE_BOARDS[n];
+  }
+
+  function applySataekoSeedBoard() {
+    resetReplaySnapshots();
+
+    if (busy) return;
+
+    // 連鎖の種は通常4連結ルール。
+    specialRule = false;
+    eraseThreshold = 4;
+    simultaneousBase = 4;
+
+    const preset = SATAEKO_CHAIN_SEEDS[Number(sataekoSeedBoardEl.value)] || SATAEKO_CHAIN_SEEDS[1];
+    board = preset.map(row => row.slice());
+
+    sataekoSystemEnabled = true;
+    sataekoChaseAlreadyTriggered = false;
+    sataekoStopAfterChaseAllClear = false;
+
+    selected = [];
+    selectedEdges = [];
+    traceCursor = null;
+    tracing = false;
+    paintMode = false;
+    paintSelected = [];
+    paintModeBtn.classList.remove("activeMode");
+
+    lastChain = 0;
+    chainLog = [];
+    chainLogRenderedCount = 0;
+    resetMultipliers();
+    resetBoostCounts();
+
+    hiddenQueue = [];
+    turnInProgress = false;
+    turnInitialNext = null;
+    turnInitialNextUsed = null;
+    ensureHiddenQueue();
+    refillAllNext();
+
+    updateHUD();
+    updateChainLog();
+    updateMultiplierDisplay();
+    draw();
+  }
+
+  function isBoardAllClear() {
+    for (let y = 0; y < ROWS; y++) {
+      for (let x = 0; x < COLS; x++) {
+        if (board[y][x] !== TYPES.EMPTY) return false;
+      }
+    }
+    return true;
+  }
+
+  function shouldTriggerSataekoChase() {
+    return enableSataekoChaseEl.checked && !sataekoChaseAlreadyTriggered && isBoardAllClear();
+  }
+
+  async function dropSataekoChaseBoard() {
+    sataekoChaseAlreadyTriggered = true;
+
+    const preset = getCurrentSataekoChaseBoard();
+    board = preset.map(row => row.slice());
+
+    // 追撃固定配置はNEXT変換やNEXTプラスの影響を受けない。
+    // 追撃後に全消ししたらそこで処理終了する。
+    sataekoStopAfterChaseAllClear = true;
+
+    draw();
+    await sleep(560);
+    await animationPausePoint();
+  }
+
+  function applyOjamaSeedBoard() {
+    resetReplaySnapshots();
+
+    sataekoChaseAlreadyTriggered = false;
+    sataekoStopAfterChaseAllClear = false;
+
+    if (busy) return;
+
+    specialRule = false;
+    eraseThreshold = 4;
+    simultaneousBase = 4;
+
+    const preset = OJAMA_SEEDS[Number(ojamaSeedBoardEl.value)] || OJAMA_SEEDS[1];
+    board = preset.map(row => row.slice());
+
+    selected = [];
+    selectedEdges = [];
+    traceCursor = null;
+    tracing = false;
+    paintMode = false;
+    paintSelected = [];
+    paintModeBtn.classList.remove("activeMode");
+
+    lastChain = 0;
+    chainLog = [];
+    chainLogRenderedCount = 0;
+    resetMultipliers();
+    resetBoostCounts();
+
+    hiddenQueue = [];
+    turnInProgress = false;
+    turnInitialNext = null;
+    turnInitialNextUsed = null;
+    ensureHiddenQueue();
+    refillAllNext();
+
+    updateHUD();
+    updateChainLog();
+    updateMultiplierDisplay();
+    draw();
+  }
+
+  function applySpecialBoard() {
+    resetReplaySnapshots();
+
+    sataekoChaseAlreadyTriggered = false;
+    sataekoStopAfterChaseAllClear = false;
+
+    if (busy) return;
+
+    specialRule = true;
+    eraseThreshold = 3;
+    simultaneousBase = 3;
+
+    const preset = PRESET_BOARDS[Number(specialBoardEl.value)] || PRESET_BOARDS[1];
+
+    board = preset.map(row => row.slice());
+
+    selected = [];
+    selectedEdges = [];
+    traceCursor = null;
+    tracing = false;
+    paintMode = false;
+    paintSelected = [];
+    if (paintModeBtn) paintModeBtn.classList.remove("activeMode");
+
+    lastChain = 0;
+    chainLog = [];
+    chainLogRenderedCount = 0;
+    resetMultipliers();
+
+    // NEXTとネクネク以降は再生成。
+    hiddenQueue = [];
+    turnInProgress = false;
+    turnInitialNext = null;
+    turnInitialNextUsed = null;
+    ensureHiddenQueue();
+    refillAllNext();
+
+    updateHUD();
+    updateChainLog();
+    updateMultiplierDisplay();
+    draw();
+  }
+
+  function reset() {
+    resetReplaySnapshots();
+
+    sataekoChaseAlreadyTriggered = false;
+    sataekoStopAfterChaseAllClear = false;
+
+    specialRule = false;
+    eraseThreshold = 4;
+    simultaneousBase = 4;
+    turnInProgress = false;
+    turnInitialNext = null;
+    turnInitialNextUsed = null;
+    selected = [];
+    selectedEdges = [];
+    traceCursor = null;
+    tracing = false;
+    paintMode = false;
+    paintSelected = [];
+    if (paintModeBtn) paintModeBtn.classList.remove("activeMode");
+    tracing = false;
+    resetMultipliers();
+    resetBoostCounts();
+    lastChain = 0;
+    chainLog = [];
+    chainLogRenderedCount = 0;
+    currentHighlight = null;
+    currentHighlightMode = "";
+    let tries = 0;
+    do {
+      makeInitialBoard();
+      tries++;
+    } while (hasAutoErase() && tries < 80);
+    updateHUD();
+    updateChainLog();
+    updateMultiplierDisplay();
+    draw();
+  }
+
+  function updateHUD() {
+    chainEl.textContent = lastChain;
+    totalMultiplierEl.textContent = totalMultiplier.toFixed(2);
+    selectedEl.textContent = selected.length;
+    limitLabel.textContent = maxTrace;
+    limitView.textContent = maxTrace;
+  }
+
+  function cellAtPointer(e) {
+    const rect = canvas.getBoundingClientRect();
+    const px = (e.clientX - rect.left) * canvas.width / rect.width;
+    const py = (e.clientY - rect.top) * canvas.height / rect.height;
+    const { pad, cell, boardTop } = geom();
+    const x = Math.floor((px - pad) / cell);
+    const y = Math.floor((py - boardTop) / cell);
+    if (!inBounds(x, y)) return null;
+    return { x, y };
+  }
+
+  function isAdjacent8(a, b) {
+    return Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y)) <= 1;
+  }
+
+  function sameCell(a, b) {
+    return a && b && a.x === b.x && a.y === b.y;
+  }
+
+  function isSelected(pos) {
+    return selected.some(p => sameCell(p, pos));
+  }
+
+  function selectedAdjacentTo(pos) {
+    return selected.find(p => isAdjacent8(p, pos));
+  }
+
+  function moveTraceCursor(pos) {
+    traceCursor = pos ? { x: pos.x, y: pos.y } : null;
+  }
+
+  function chooseAnchorFor(pos) {
+    // 最後に触ったマスではなく、選択済みマス全体から隣接しているものを探す。
+    // 候補が複数ある時は「最後に追加された候補」を優先する。
+    // これで、盤面上で自然に近い分岐元から線が伸びる。
+    const candidates = selected.filter(p => isAdjacent8(p, pos));
+    if (!candidates.length) return null;
+    return candidates[candidates.length - 1];
+  }
+
+  function addSelection(pos) {
+    if (busy || !pos) return false;
+    if (!board[pos.y][pos.x]) return false;
+    if (baseType(board[pos.y][pos.x]) === TYPES.OJAMA) return false;
+
+    // 選択済みマスを触り直す場合は消費しない。
+    // ただし線の接続元を変えるための「現在位置」扱いもしない。
+    // v7では現在位置ではなく、選択済み全体から接続する。
+    if (isSelected(pos)) {
+      traceCursor = { x: pos.x, y: pos.y };
+      draw();
+      return true;
+    }
+
+    if (selected.length >= maxTrace) return false;
+
+    if (selected.length === 0) {
+      selected.push({ x: pos.x, y: pos.y });
+      traceCursor = { x: pos.x, y: pos.y };
+      updateHUD();
+      draw();
+      return true;
+    }
+
+    const anchor = chooseAnchorFor(pos);
+    if (!anchor) return false;
+
+    const added = { x: pos.x, y: pos.y };
+    selected.push(added);
+    selectedEdges.push({
+      from: { x: anchor.x, y: anchor.y },
+      to: { x: added.x, y: added.y }
+    });
+    traceCursor = added;
+    updateHUD();
+    draw();
+    return true;
+  }
+
+  function clearSelection() {
+    selected = [];
+    selectedEdges = [];
+    traceCursor = null;
+    tracing = false;
+    paintMode = false;
+    paintSelected = [];
+    if (paintModeBtn) paintModeBtn.classList.remove("activeMode");
+    updateHUD();
+    draw();
+  }
+
+  mountActionControlsLeft();
+
+  canvas.addEventListener("pointerdown", e => {
+    if (busy) return;
+    e.preventDefault();
+
+    const pos = cellAtPointer(e);
+    if (!pos) return;
+
+    if (boostAreaMode) {
+      toggleBoostCell(pos);
+      return;
+    }
+
+    if (paintMode) {
+      togglePaintSelection(pos);
+      return;
+    }
+
+    tracing = true;
+    addSelection(pos);
+  });
+
+  canvas.addEventListener("pointermove", e => {
+    if (paintMode) return;
+    if (!tracing || busy) return;
+    e.preventDefault();
+    const pos = cellAtPointer(e);
+    if (!pos) return;
+
+    // v7:
+    // ドラッグ中も「最後の位置」ではなく、選択済み全体に隣接しているかを見る。
+    // これでなぞり返し・分岐・離れたクリック追加の挙動が一致する。
+    addSelection(pos);
+  });
+
+  window.addEventListener("pointerup", () => {
+    // v5では選択ルートは保持する。tracingだけ切る。
+    tracing = false;
+  });
+
+  limitEl.addEventListener("input", () => {
+    maxTrace = Number(limitEl.value);
+    if (selected.length > maxTrace) selected = selected.slice(0, maxTrace);
+    updateHUD();
+    draw();
+  });
+
+  resolveBtn.addEventListener("click", async () => {
+    if (busy || selected.length === 0) return;
+    await eraseSelectedAndResolve();
+  });
+
+  resetBtn.addEventListener("click", reset);
+
+  clearSelectBtn.addEventListener("click", clearSelection);
+
+  resetClearCountsBtn.addEventListener("click", resetCumulativeClearCounts);
+  pauseReplayBtn.addEventListener("click", () => {
+    replayPaused = !replayPaused;
+    pauseReplayBtn.classList.toggle("activeMode", replayPaused);
+    pauseReplayBtn.textContent = replayPaused ? "再開" : "一時停止";
+  });
+
+  stepBackBtn.addEventListener("click", () => {
+    if (!replaySnapshots.length) return;
+    replayPaused = true;
+    pauseReplayBtn.classList.add("activeMode");
+    pauseReplayBtn.textContent = "再開";
+    restoreReplaySnapshot(replayIndex - 1);
+  });
+
+  stepForwardBtn.addEventListener("click", () => {
+    if (!replaySnapshots.length) return;
+    restoreReplaySnapshot(replayIndex + 1);
+  });
+
+  saveSlotBtn.addEventListener("click", () => {
+    const slot = Number(saveSlotSelectEl.value);
+    saveCurrentBoardToSlot(slot);
+  });
+
+  loadSlotBtn.addEventListener("click", () => {
+    const slot = Number(saveSlotSelectEl.value);
+    loadBoardFromSlot(slot);
+  });
+
+  deleteSlotBtn.addEventListener("click", () => {
+    const slot = Number(saveSlotSelectEl.value);
+    deleteBoardSlot(slot);
+  });
+
+  boostModeBtn.addEventListener("click", () => {
+    boostAreaMode = !boostAreaMode;
+    boostModeBtn.classList.toggle("activeMode", boostAreaMode);
+  });
+
+  convertNextBtn.addEventListener("click", () => {
+    convertVisibleNextTo(Number(nextColorEl.value));
+  });
+
+  convertNextPlusBtn.addEventListener("click", convertVisibleNextToPlus);
+
+  keepNextConvertEl.addEventListener("change", () => {
+    if (!keepNextConvertEl.checked) {
+      persistentNextColor = null;
+      persistentNextPlus = false;
+    }
+  });
+
+  applyCoefBtn.addEventListener("click", () => {
+    const value = Number(simulCoefEl.value);
+    simultaneousCoef = Number.isFinite(value) && value >= 0 ? value : 0.15;
+    simulCoefEl.value = simultaneousCoef.toFixed(2);
+  });
+
+  applyChainCoefBtn.addEventListener("click", applyChainSettings);
+
+  function setSpeed(mult, button) {
+    speedMultiplier = mult;
+    speed2Btn.classList.remove("speedActive");
+    speed3Btn.classList.remove("speedActive");
+    if (button) button.classList.add("speedActive");
+  }
+
+  function clearSpeed() {
+    speedMultiplier = 1;
+    speed2Btn.classList.remove("speedActive");
+    speed3Btn.classList.remove("speedActive");
+  }
+
+  speed2Btn.addEventListener("pointerdown", e => { e.preventDefault(); setSpeed(2, speed2Btn); });
+  speed3Btn.addEventListener("pointerdown", e => { e.preventDefault(); setSpeed(3, speed3Btn); });
+  for (const btn of [speed2Btn, speed3Btn]) {
+    btn.addEventListener("pointerup", clearSpeed);
+    btn.addEventListener("pointerleave", clearSpeed);
+    btn.addEventListener("pointercancel", clearSpeed);
+  }
+  window.addEventListener("pointerup", clearSpeed);
+
+  applySpecialBtn.addEventListener("click", applySpecialBoard);
+  applyOjamaSeedBtn.addEventListener("click", applyOjamaSeedBoard);
+  applySataekoSeedBtn.addEventListener("click", applySataekoSeedBoard);
+
+  paintModeBtn.addEventListener("click", () => setPaintMode(!paintMode));
+  applyPaintBtn.addEventListener("click", applyPaintAndResolve);
+
+  async function eraseSelectedAndResolve() {
+    busy = true;
+    beginTurnIfNeeded();
+    resetReplaySnapshots();
+
+    // 0連鎖目として、ユーザーがなぞり消しで選んだ場所を白丸表示できるように保存。
+    currentHighlight = selectedToHighlightSet();
+    currentHighlightMode = currentHighlight ? "erase" : "";
+
+    recordReplaySnapshot("0連鎖目 なぞり消し前");
+
+    lastChain = 0;
+    chainLog = [];
+    chainLogRenderedCount = 0;
+    resetMultipliers();
+    simultaneousCoef = Number(simulCoefEl.value) || 0.15;
+    updateHUD();
+    updateChainLog();
+    updateMultiplierDisplay();
+
+    const selectedKeys = new Set(selected.map(p => `${p.x},${p.y}`));
+    currentHighlight = selectedKeys;
+    currentHighlightMode = "trace";
+    draw();
+    await sleep(420);
+        await animationPausePoint();
+
+    // ユーザー操作で選択ぷよを消す
+    // なぞりで直接消したぷよは累計消去数のカウント対象外。
+    for (const { x, y } of selected) board[y][x] = TYPES.EMPTY;
+
+    currentHighlight = null;
+    currentHighlightMode = "";
+    selected = [];
+    selectedEdges = [];
+    traceCursor = null;
+    currentHighlight = null;
+    currentHighlightMode = "";
+    draw();
+    await sleep(300);
+
+    // まず盤面内だけで落下。ここではNEXTを入れない。
+    await applyGravityAnimated(false);
+
+    let chain = 0;
+
+    // v11:
+    // 完全安定まで繰り返す。
+    // 優先順位は必ず
+    // 1. 盤面上に4連結があるなら消す
+    // 2. 消したら盤面内だけで落下
+    // 3. 4連結が無く、空きがあるならNEXT/ネクネクから補充
+    // 4. 補充後に4連結ができたらまた1へ
+    // 5. 4連結なし・空きなしで終了
+    let safety = 0;
+    while (safety++ < 300) {
+      const erase = findEraseSet();
+
+      if (erase.size > 0) {
+        chain++;
+        lastChain = chain;
+
+        const parts = summarizeEraseSet(erase);
+        const detail = calculateMultiplierEntry(erase, chain);
+        chainLog.push({ chain, parts, detail });
+        updateHUD();
+        updateChainLog();
+        updateMultiplierDisplay();
+
+        currentHighlight = erase;
+        currentHighlightMode = "erase";
+        recordReplaySnapshot(`${chain}連鎖目 消去前`);
+        draw();
+        await sleep(860);
+
+        addToCumulativeClearCounts(erase);
+        addBoostEraseCounts(erase);
+
+        for (const key of erase) {
+          const [x, y] = key.split(",").map(Number);
+          board[y][x] = TYPES.EMPTY;
+        }
+
+        currentHighlight = null;
+        currentHighlightMode = "";
+        draw();
+        await sleep(360);
+
+        // 連鎖で空いたぶんは、まず盤面内だけで詰める
+        await applyGravityAnimated(false);
+        continue;
+      }
+
+      if (isBoardAllClear()) {
+        if (sataekoStopAfterChaseAllClear) {
+          // 追撃固定配置が全消しされたら、通常NEXT補充せず処理終了。
+          break;
+        }
+
+        if (shouldTriggerSataekoChase()) {
+          await dropSataekoChaseBoard();
+          continue;
+        }
+      }
+
+      if (hasEmptyCell()) {
+        if (isNextOnlyMode()) {
+          // NEXTだけ降ってくるモードでは、まず見えているNEXTだけを一度補充する。
+          // その後も空きが残る場合は、そのままターン終了。
+          await sleep(260);
+          await animationPausePoint();
+          await applyGravityAnimated(true);
+
+          if (hasEmptyCell()) break;
+          continue;
+        }
+
+        // 4連結が無い状態で空きがあるなら、ここでNEXT/ネクネクを補充する。
+        // ただしサタエコ追撃の発動条件を先に見ている。
+        await sleep(260);
+        await animationPausePoint();
+        await applyGravityAnimated(true);
+        continue;
+      }
+
+      // 4連結なし、空きなし。盤面が完全に安定。
+      break;
+    }
+
+    currentHighlight = null;
+    currentHighlightMode = "";
+
+    // 巻き送りで、最後に消えた連鎖だけでなく完全終了後の盤面まで戻れるように保存。
+    recordFinalReplaySnapshot("最終盤面");
+
+    // ターン完全終了。空になったNEXT枠だけ補充する。
+    endTurnAndRefreshNext();
+
+    // NEXT補充後の見た目も最終スナップショットとして保存。
+    recordFinalReplaySnapshot("最終盤面 NEXT補充後");
+
+    busy = false;
+    updateHUD();
+    updateChainLog();
+    updateMultiplierDisplay();
+    draw();
+  }
+
+  function shade(hex, amt) {
+    const n = parseInt(hex.slice(1), 16);
+    let r = (n >> 16) + amt;
+    let g = ((n >> 8) & 255) + amt;
+    let b = (n & 255) + amt;
+    r = Math.max(0, Math.min(255, r));
+    g = Math.max(0, Math.min(255, g));
+    b = Math.max(0, Math.min(255, b));
+    return `rgb(${r},${g},${b})`;
+  }
+
+  function roundRect(x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  function drawPuyo(cx, cy, r, type, alpha = 1) {
+    if (!type) return;
+    const rawType = type;
+    const plus = isPlusPuyo(rawType);
+    type = baseType(rawType);
+    ctx.save();
+    ctx.globalAlpha = alpha;
+
+    if (type === TYPES.OJAMA) {
+      const grad = ctx.createRadialGradient(cx - r * .28, cy - r * .36, r * .1, cx, cy, r * 1.02);
+      grad.addColorStop(0, "#ffffff");
+      grad.addColorStop(.35, "#e8edf2");
+      grad.addColorStop(1, "#9ba5ad");
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.ellipse(cx, cy + r * .03, r * .86, r * .94, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = "rgba(80,90,100,.72)";
+      ctx.beginPath();
+      ctx.ellipse(cx - r * .22, cy - r * .02, r * .09, r * .11, 0, 0, Math.PI * 2);
+      ctx.ellipse(cx + r * .22, cy - r * .02, r * .09, r * .11, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.restore();
+      return;
+    }
+
+    if (type === TYPES.HEART) {
+      ctx.fillStyle = COLORS[type];
+      roundRect(cx - r, cy - r, r * 2, r * 2, r * .36);
+      ctx.fill();
+      ctx.fillStyle = "rgba(255,255,255,.88)";
+      ctx.font = `${Math.floor(r * 1.18)}px system-ui`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("♥", cx, cy + 1);
+      ctx.restore();
+      return;
+    }
+
+    const grad = ctx.createRadialGradient(cx - r * .34, cy - r * .4, r * .12, cx, cy, r * 1.08);
+    grad.addColorStop(0, "#fff");
+    grad.addColorStop(.17, COLORS[type]);
+    grad.addColorStop(1, shade(COLORS[type], -30));
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy + r * .04, r * .86, r * .96, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = "rgba(255,255,255,.55)";
+    ctx.beginPath();
+    ctx.ellipse(cx - r * .26, cy - r * .32, r * .22, r * .14, -0.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = "rgba(0,0,0,.25)";
+    ctx.beginPath();
+    ctx.ellipse(cx - r * .22, cy - r * .02, r * .065, r * .09, 0, 0, Math.PI * 2);
+    ctx.ellipse(cx + r * .22, cy - r * .02, r * .065, r * .09, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    if (plus) {
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = "rgba(255,255,255,.96)";
+      ctx.strokeStyle = "rgba(20,18,40,.85)";
+      ctx.lineWidth = 3;
+      ctx.font = `${Math.floor(r * .72)}px system-ui`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.strokeText("＋", cx + r * .45, cy - r * .45);
+      ctx.fillText("＋", cx + r * .45, cy - r * .45);
+      ctx.restore();
+    }
+
+    ctx.restore();
+  }
+
+  function drawGlow(cx, cy, r, type, intensity) {
+    const color = type ? COLORS[baseType(type)] : "#ffffff";
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+
+    const outer = ctx.createRadialGradient(cx, cy, r * .18, cx, cy, r * 1.45);
+    outer.addColorStop(0, "rgba(255,255,255,.95)");
+    outer.addColorStop(.22, color);
+    outer.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.globalAlpha = .42 * intensity;
+    ctx.fillStyle = outer;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r * 1.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.globalAlpha = .75 * intensity;
+    ctx.strokeStyle = "rgba(255,255,255,.95)";
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r * 1.02, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
+  function draw(highlightSet = currentHighlight, mode = currentHighlightMode) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const { pad, cell, nextTop, boardTop } = geom();
+
+    // NEXT
+    ctx.fillStyle = "rgba(255,255,255,.06)";
+    roundRect(pad, nextTop, cell * COLS, cell, 16);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(255,255,255,.17)";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    ctx.fillStyle = "rgba(255,255,255,.70)";
+    ctx.font = "16px system-ui";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "alphabetic";
+    ctx.fillText("NEXT", pad, nextTop - 7);
+
+    // NEXTは必ず8個表示。
+    for (let x = 0; x < COLS; x++) {
+      const cx = pad + x * cell + cell / 2;
+      const cy = nextTop + cell / 2;
+      drawPuyo(cx, cy, cell * .36, nextRow[x], .72);
+    }
+
+    // board base
+    ctx.fillStyle = "rgba(0,0,0,.20)";
+    roundRect(pad, boardTop, cell * COLS, cell * ROWS, 18);
+    ctx.fill();
+
+    ctx.strokeStyle = "rgba(255,255,255,.10)";
+    ctx.lineWidth = 1;
+    for (let x = 0; x <= COLS; x++) {
+      ctx.beginPath();
+      ctx.moveTo(pad + x * cell, boardTop);
+      ctx.lineTo(pad + x * cell, boardTop + ROWS * cell);
+      ctx.stroke();
+    }
+    for (let y = 0; y <= ROWS; y++) {
+      ctx.beginPath();
+      ctx.moveTo(pad, boardTop + y * cell);
+      ctx.lineTo(pad + COLS * cell, boardTop + y * cell);
+      ctx.stroke();
+    }
+
+    const pulse = .70 + .30 * Math.sin(Date.now() / 120);
+
+    // glow layer first
+    if (highlightSet && mode === "erase") {
+      for (const key of highlightSet) {
+        const [x, y] = key.split(",").map(Number);
+        const cx = pad + x * cell + cell / 2;
+        const cy = boardTop + y * cell + cell / 2;
+        drawGlow(cx, cy, cell * .42, board[y]?.[x], pulse);
+      }
+    }
+
+    // boost area cells
+    for (let y = 0; y < ROWS; y++) {
+      for (let x = 0; x < COLS; x++) {
+        if (!isBoostCell(x, y)) continue;
+
+        const bx = pad + x * cell;
+        const by = boardTop + y * cell;
+
+        ctx.save();
+        ctx.fillStyle = "rgba(255,220,80,.16)";
+        ctx.fillRect(bx + 2, by + 2, cell - 4, cell - 4);
+
+        ctx.strokeStyle = "rgba(255,220,80,.92)";
+        ctx.lineWidth = 3;
+        ctx.strokeRect(bx + 2, by + 2, cell - 4, cell - 4);
+        ctx.restore();
+      }
+    }
+
+    // board puyos
+    for (let y = 0; y < ROWS; y++) {
+      for (let x = 0; x < COLS; x++) {
+        const key = `${x},${y}`;
+        const cx = pad + x * cell + cell / 2;
+        const cy = boardTop + y * cell + cell / 2;
+        let alpha = 1;
+
+        if (highlightSet && highlightSet.has(key)) {
+          alpha = mode === "erase" ? .88 + .12 * pulse : .82;
+        }
+
+        drawPuyo(cx, cy, cell * .38, board[y][x], alpha);
+
+        if (highlightSet && highlightSet.has(key)) {
+          ctx.save();
+          ctx.strokeStyle = mode === "erase" ? "rgba(255,255,255,.98)" : "rgba(255,255,255,.85)";
+          ctx.lineWidth = mode === "erase" ? 6 : 4;
+          ctx.shadowColor = mode === "erase" ? "#ffffff" : "transparent";
+          ctx.shadowBlur = mode === "erase" ? 18 : 0;
+          ctx.beginPath();
+          ctx.arc(cx, cy, cell * .46, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.restore();
+        }
+      }
+    }
+
+    // paint selection overlay
+    if (paintSelected.length) {
+      for (const p of paintSelected) {
+        const cx = pad + p.x * cell + cell / 2;
+        const cy = boardTop + p.y * cell + cell / 2;
+        ctx.save();
+        ctx.strokeStyle = "rgba(168,255,241,.98)";
+        ctx.lineWidth = 5;
+        ctx.shadowColor = "rgba(168,255,241,.9)";
+        ctx.shadowBlur = 16;
+        ctx.beginPath();
+        ctx.arc(cx, cy, cell * .50, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    // selection network
+    if (selected.length) {
+      ctx.save();
+      ctx.strokeStyle = "rgba(255,255,255,.92)";
+      ctx.lineWidth = 8;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+
+      // 線は選択順ではなく、実際に接続された隣接マス同士だけを描く。
+      for (const edge of selectedEdges) {
+        const ax = pad + edge.from.x * cell + cell / 2;
+        const ay = boardTop + edge.from.y * cell + cell / 2;
+        const bx = pad + edge.to.x * cell + cell / 2;
+        const by = boardTop + edge.to.y * cell + cell / 2;
+        ctx.beginPath();
+        ctx.moveTo(ax, ay);
+        ctx.lineTo(bx, by);
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      for (const p of selected) {
+        const cx = pad + p.x * cell + cell / 2;
+        const cy = boardTop + p.y * cell + cell / 2;
+        ctx.strokeStyle = "#fff";
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.arc(cx, cy, cell * .44, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    }
+
+  }
+
+  function loop() {
+    if (busy || currentHighlight) draw();
+    requestAnimationFrame(loop);
+  }
+
+  reset();
+  updateClearCountDisplay();
+  requestAnimationFrame(loop);
+})();
+</script>
+
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./service-worker.js');
+  });
+}
+</script>
+
+</body>
+</html>

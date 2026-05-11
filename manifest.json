@@ -1,0 +1,16 @@
+{
+  "name": "ぷよ消しシュミレーター(試作)",
+  "short_name": "ぷよ消し",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#17142a",
+  "theme_color": "#17142a",
+  "orientation": "landscape",
+  "icons": [
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
